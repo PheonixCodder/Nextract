@@ -12,11 +12,11 @@ const layout = ({children} : {children: React.ReactNode}) => {
         <div className="flex flex-col flex-1 min-h-screen">
             <header className="flex items-center justify-between px-6 py-4 h-[50px] container">
                 <BreadcrumbHeader />
-                <div className='gap-1 flex items-center'>
-                    <ModeToggle />
+                <div className='gap-5 flex items-center'>
                     <SignedIn>
                         <UserButton />
                     </SignedIn>
+                    <ModeToggle />
                 </div>
             </header>
                 <Separator />
