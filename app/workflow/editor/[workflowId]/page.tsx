@@ -1,12 +1,24 @@
-import { getWorkflow } from "@/actions/workflows/getWorkflowForUser"; // Import the function
-import NotFoundPage from "@/app/not-found";  // Page to render when workflow isn't found or there is an error
-import React from "react";
+import { notFound, redirect } from 'next/navigation';
 
-const Page = async ({ params }: { params: { workflowId: string } }) => {
+import { auth } from '@clerk/nextjs/server';
+import { getWorkflow } from '@/actions/workflows/getWorkflowForUser';
+import Editor from '../../_components/Editor';
+
+
+export default async function WorkflowEditorPage ({ params } :{ params: { workflowId: string } }) {
   const { workflowId } = await params;
-  const workflow = await getWorkflow(workflowId);
-  console.log(workflow)
-  return <div>Workflow</div>;
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect('/sign-in');
+  }
+  const workflow = await getWorkflow(workflowId)
+  if (!workflow) {
+    notFound();
+  }
+
+  return (
+  <Editor workflow={workflow} />
+  )
 };
 
-export default Page;

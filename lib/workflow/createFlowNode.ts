@@ -1,0 +1,18 @@
+import { AppNode } from "@/types/appNodes";
+import { TaskType } from "@/types/task";
+
+export function CreateFlowNode(
+    nodeType: TaskType,
+    position?: {x: number, y: number}
+): AppNode {
+    return {
+        id: crypto.randomUUID(),
+        type: "FlowScrapeNode",
+        dragHandle: ".drag-handle",
+        data: {
+            type: nodeType,
+            inputs: {},
+        },
+        position: position ?? {x: 250, y: 250}
+    }
+}
