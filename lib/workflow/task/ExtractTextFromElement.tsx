@@ -14,19 +14,19 @@ export const ExtractTextFromElementTask = {
       name: "Html",
       type: TaskParamType.STRING,
       required: true,
-      variant : "textarea",
+      variant: "textarea",
     },
     {
       name: "Selector",
       type: TaskParamType.STRING,
       required: true,
     },
+  ] as const,
+  outputs: [
+    {
+      name: "Extracted Text",
+      type: TaskParamType.STRING,
+    },
   ],
-  outputs : [
-        {
-            name: 'Extracted Text',
-            type: TaskParamType.STRING,
-        },
-    ],
-    credits: 2
-} satisfies WorkflowTask
+  credits: 2,
+} as const satisfies WorkflowTask;

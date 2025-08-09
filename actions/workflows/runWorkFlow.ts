@@ -1,6 +1,7 @@
 'use server'
 
 import prisma from "@/lib/prisma";
+import { ExecuteWorkflow } from "@/lib/workflow/executeWorkflow";
 import { FlowToExecutionPlan } from "@/lib/workflow/executionPlan";
 import { TaskRegistry } from "@/lib/workflow/task/registry";
 import { ExecutionPhaseStatus, WorkflowExecutionPlan, WorkflowExecutionStatus, WorkflowExecutionTrigger } from "@/types/workflow";
@@ -37,6 +38,7 @@ export async function RunWorkflow(form: {workflowId : string; flowDefinition?: s
     if (!result?.executionPlan){
         throw new Error('No execution plan generated')
     }
+    // eslint-disable-next-line prefer-const
     executionPlan = result.executionPlan
 
     const execution = await prisma.workflowExecution.create({
@@ -46,6 +48,7 @@ export async function RunWorkflow(form: {workflowId : string; flowDefinition?: s
             status : WorkflowExecutionStatus.PENDING,
             startedAt : new Date(),
             trigger: WorkflowExecutionTrigger.MANUAL,
+            definition : flowDefinition,
             phases:{
                 create: executionPlan.flatMap(phase => {
                     return phase.nodes.flatMap(node => {
@@ -68,7 +71,7 @@ export async function RunWorkflow(form: {workflowId : string; flowDefinition?: s
     if (!execution){
         throw new Error('Workflow execution not created')
     }
-    
 
+    ExecuteWorkflow(execution.id)
     redirect(`/workflow/runs/${workflowId}/${execution.id}`)
 }
