@@ -1,4 +1,4 @@
-import { intervalToDuration } from "date-fns"
+import { format, intervalToDuration } from "date-fns"
 
 export function DateToDurationString(
     end: Date | null | undefined,
@@ -15,4 +15,8 @@ export function DateToDurationString(
         end: timeElapsed
     })
     return `${duration.minutes || 0}m ${duration.seconds || 0}s`
+}
+
+export function formatDateAtTime(isoString: string): string {
+  return format(new Date(isoString), "dd MMM yyyy 'at' hh:mm a");
 }

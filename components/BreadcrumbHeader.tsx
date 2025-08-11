@@ -8,6 +8,7 @@ import { MobileSidebar } from './Sidebar'
 const BreadcrumbHeader = () => {
     const pathName = usePathname()
     const paths = pathName === '/' ? [''] : pathName.split('/')
+    console.log(paths)
   return (
     <div className='flex items-center flex-start'>
         <MobileSidebar />

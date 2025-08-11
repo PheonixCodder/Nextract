@@ -5,17 +5,20 @@ import useExecutionPlan from '@/components/hooks/useExecutionPlan'
 import { Button } from '@/components/ui/button'
 import { useMutation } from '@tanstack/react-query'
 import { useReactFlow } from '@xyflow/react'
-import { PlayIcon } from 'lucide-react'
+import { Loader2Icon, PlayIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import React from 'react'
 import { toast } from 'sonner'
 
 const ExecuteBtn = ({workflowId}:{workflowId : string}) => {
+  const router = useRouter()
   const generate = useExecutionPlan()
   const { toObject } = useReactFlow()
   const mutation = useMutation({
     mutationFn: RunWorkflow,
-    onSuccess: () => {
+    onSuccess: (url) => {
       toast.success('Execution Started', {id: 'flow-execution'})
+      router.push(url)
     },
     onError: (error) => {
       toast.error(error.message, {id: 'flow-execution'})
@@ -29,7 +32,7 @@ const ExecuteBtn = ({workflowId}:{workflowId : string}) => {
       }
       mutation.mutate({workflowId: workflowId, flowDefinition: JSON.stringify(toObject())})
     }}>
-        <PlayIcon size={16} className='stroke-orange-400' />
+      {mutation.isPending ? <Loader2Icon className='animate-spin' /> : <PlayIcon size={16} className='stroke-orange-400'/>}
         <span>Execute</span>
     </Button>
   )

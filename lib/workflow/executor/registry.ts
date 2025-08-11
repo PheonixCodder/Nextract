@@ -14,5 +14,5 @@ type Registry = {
 export const ExecutorRegistry : Registry = {
     LAUNCH_BROWSER : LaunchBrowserExecutor,
     PAGE_TO_HTML : PageToHtmlExecutor,
-    EXTRACT_TEXT_FROM_ELEMENT : () => Promise.resolve(true)
+    EXTRACT_TEXT_FROM_ELEMENT : ExtractTextFromElementExecutor
 }

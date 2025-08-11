@@ -8,8 +8,8 @@ export async function PageToHtmlExecutor(
     const html = await environment.getPage()!.content()
     environment.setOutput('Html', html)
     return true;
-  } catch (error) {
-    console.log(error);
-    return true;
+  } catch (error: any) {
+    environment.log.error(error.message)
+    return false;
   }
 }
