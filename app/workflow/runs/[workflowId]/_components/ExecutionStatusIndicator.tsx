@@ -4,7 +4,7 @@ import React from "react";
 
 const indicatorColors: Record<WorkflowExecutionStatus, string> = {
   PENDING: "bg-slate-400",
-  COMPLETED: "be-emerald-600",
+  COMPLETED: "bg-emerald-600",
   FAILED: "bg-red-400",
   RUNNING: "bg-yellow-400",
 };

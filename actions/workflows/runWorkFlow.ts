@@ -13,7 +13,6 @@ import {
 } from "@/types/workflow";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function RunWorkflow(form: {
   workflowId: string;

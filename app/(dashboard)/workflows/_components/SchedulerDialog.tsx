@@ -18,6 +18,8 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import cronstrue from 'cronstrue'
 import CronExpressionParser from "cron-parser";
+import { RemoveWorkflowSchedule } from "@/actions/workflows/removeWorkflowSchedule";
+import { Separator } from "@/components/ui/separator";
 
 type Props = {
     workflowId : string
@@ -52,6 +54,17 @@ const SchedulerDialog = (props:Props) => {
         toast.error(`Failed to update schedule: ${error}`, {id: 'workflow-cron'});
     },
   });
+
+  const removeScheduleMutation = useMutation({
+    mutationFn: RemoveWorkflowSchedule,
+    onSuccess: () => {
+      toast.success('Schedule deleted successfully', {id: 'workflow-cron'});
+    },
+    onError: (error) => {
+        toast.error(`Failed to delete schedule: ${error}`, {id: 'workflow-cron'});
+    },
+  });
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -83,6 +96,15 @@ const SchedulerDialog = (props:Props) => {
           <p>Specify a cron expression to schedule the workflow execution.</p>
           <Input placeholder="E.g ., 0 0 * * * ?" value={cron} onChange={(e) => setCron(e.target.value)} />
           <div className={cn('bg-accent rounded-md p-4 border text-sm border-destructive text-destructive', validCron && 'border-primary text-primary')}>{validCron ? readableCron : "Invalid cron expression"}</div>
+          {workflowHasValidCron && <DialogClose asChild>
+            <div>
+              <Button className="w-full text-destructive border-destructive hover:text-destructive" variant={'outline'} disabled={removeScheduleMutation.isPending || mutation.isPending} onClick={()=>{
+                toast.loading('Removing Schedule', {id: 'workflow-cron'});
+                removeScheduleMutation.mutate({id: props.workflowId});
+              }}>Remove Current Schedule</Button>
+              <Separator className="my-4" />
+            </div>
+            </DialogClose>}
         </div>
         <DialogFooter className="px-6 gap-2">
           <DialogClose asChild>
