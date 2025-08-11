@@ -230,6 +230,7 @@ async function executePhase(
 ): Promise<boolean> {
   const runFun = ExecutorRegistry[node.data.type];
   if (!runFun) {
+    logCollector.error(`No executor for ${node.data.type}`)
     return false;
   }
   const executionEnvironment: ExecutionEnvironment<any> =

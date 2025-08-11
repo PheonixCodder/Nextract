@@ -9,6 +9,13 @@ const indicatorColors: Record<WorkflowExecutionStatus, string> = {
   RUNNING: "bg-yellow-400",
 };
 
+const labelColors: Record<WorkflowExecutionStatus, string> = {
+  PENDING: "text-slate-400",
+  COMPLETED: "text-emerald-600",
+  FAILED: "text-red-400",
+  RUNNING: "text-yellow-400",
+};
+
 const ExecutionStatusIndicator = ({
   status,
 }: {
@@ -18,3 +25,11 @@ const ExecutionStatusIndicator = ({
 };
 
 export default ExecutionStatusIndicator;
+
+export function ExecutionStatusLabel({
+  status,
+}: {
+  status: WorkflowExecutionStatus;
+}){
+  return <span className={cn('lowercase', labelColors[status])}></span>
+}

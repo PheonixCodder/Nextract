@@ -32,9 +32,10 @@ import DeleteWorkflowDialog from "./DeleteWorkflowDialog";
 import RunBtn from "./RunBtn";
 import SchedulerDialog from "./SchedulerDialog";
 import { Badge } from "@/components/ui/badge";
-import ExecutionStatusIndicator from "@/app/workflow/runs/[workflowId]/_components/ExecutionStatusIndicator";
+import ExecutionStatusIndicator, { ExecutionStatusLabel } from "@/app/workflow/runs/[workflowId]/_components/ExecutionStatusIndicator";
 import { format, formatDistanceToNow } from "date-fns";
-import {formatInTimeZone} from 'date-fns-tz';
+import { formatInTimeZone } from "date-fns-tz";
+import DuplicateWorkflowDialog from "./DupicateWorkflowDialog";
 
 const statusColors = {
   [WorkflowStatus.DRAFT]: "bg-green-400 text-green-600",
@@ -44,7 +45,7 @@ const statusColors = {
 const WorkflowCard = ({ workflow }: { workflow: Workflow }) => {
   const isDraft = workflow.status === WorkflowStatus.DRAFT;
   return (
-    <Card className="border border-separate shadow-sm rounded-lg overflow-hidden hover:shadow-md dark:shadow-primary/30">
+    <Card className="border border-separate shadow-sm rounded-lg overflow-hidden hover:shadow-md dark:shadow-primary/30 group/card">
       <CardContent className="p-4 flex items-center justify-between h-[100px]">
         <div className="flex items-center justify-end space-x-3">
           <div
@@ -61,17 +62,20 @@ const WorkflowCard = ({ workflow }: { workflow: Workflow }) => {
           </div>
           <div>
             <h3 className="text-base font-bold text-muted-foreground flex items-center">
-              <Link
-                href={`/workflow/editor/${workflow.id}`}
-                className="flex items-center"
-              >
-                {workflow.name}
-              </Link>
+              <TooltipWrapper content={workflow.description}>
+                <Link
+                  href={`/workflow/editor/${workflow.id}`}
+                  className="flex items-center"
+                >
+                  {workflow.name}
+                </Link>
+              </TooltipWrapper>
               {isDraft && (
                 <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
                   Draft
                 </span>
               )}
+              <DuplicateWorkflowDialog workflowId={workflow.id} />
             </h3>
             <ScheduleSection
               isDraft={isDraft}
@@ -190,9 +194,11 @@ function ScheduleSection({
 
 function LastRunDetails({ workflow }: { workflow: Workflow }) {
   const { lastRunAt, lastRunStatus, lastRunId, nextRunAt } = workflow;
-  const formattedStartedAt = lastRunAt && formatDistanceToNow(lastRunAt, { addSuffix: true });
+  const formattedStartedAt =
+    lastRunAt && formatDistanceToNow(lastRunAt, { addSuffix: true });
   const nextSchedule = nextRunAt && format(nextRunAt, "yyyy-MM-dd HH:mm");
-  const nextScheduleUTC = nextRunAt && formatInTimeZone(nextRunAt, "UTC", "HH:mm");
+  const nextScheduleUTC =
+    nextRunAt && formatInTimeZone(nextRunAt, "UTC", "HH:mm");
   return (
     <div className="bg-primary/5 px-4 py-1 flex justify-between items-center text-muted-foreground">
       <div className="flex items-center text-sm gap-2">
@@ -205,7 +211,9 @@ function LastRunDetails({ workflow }: { workflow: Workflow }) {
             <ExecutionStatusIndicator
               status={lastRunStatus as WorkflowExecutionStatus}
             />
-            <span>{lastRunStatus}</span>
+            <ExecutionStatusLabel
+              status={lastRunStatus as WorkflowExecutionStatus}
+            />{" "}
             <span>{formattedStartedAt}</span>
             <ChevronRightIcon
               className="-translate-x-[2px] group-hover:translate-x-0 transition"
