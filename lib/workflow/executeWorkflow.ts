@@ -249,10 +249,10 @@ async function setupEnvironmentForPhase(
   for (const input of inputs) {
     if (input.type === TaskParamType.BROWSER_INSTANCE) continue;
     const value = await node.data.inputs[input.name];
-    if (value) {
-      environment.phases[node.id].inputs[input.name] = value;
-      continue;
-    }
+    if (value !== undefined && value !== null && value !== '') {
+  environment.phases[node.id].inputs[input.name] = value;
+  continue;
+}
 
     // get input value from outputs in the environment
     const connectedEdge = edges.find(

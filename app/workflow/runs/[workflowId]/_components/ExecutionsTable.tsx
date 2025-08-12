@@ -66,7 +66,7 @@ const ExecutionsTable = ({
                 className="cursor-pointer"
                 onClick={() => {
                   router.push(
-                    `/workflows/runs/${execution.workflowId}/${execution.id}`
+                    `/workflow/runs/${execution.workflowId}/${execution.id}`
                   );
                 }}
               >

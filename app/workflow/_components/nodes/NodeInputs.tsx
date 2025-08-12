@@ -18,7 +18,7 @@ export const NodeInput = ({input, nodeId}: {input: TaskParam, nodeId:string}) =>
     const { invalidInputs } = useFlowValidation()
     const edges = useEdges()
     const isConnected = edges.some(edge => edge.target === nodeId && edge.targetHandle === input.name)
-const hasErrors = Array.isArray(invalidInputs) ? invalidInputs.find(node => node.nodeId === nodeId)?.inputs.includes(input.name) : false;    
+    const hasErrors = Array.isArray(invalidInputs) ? invalidInputs.find(node => node.nodeId === nodeId)?.inputs.includes(input.name) : false;    
   return (
         <div className={cn('flex justify-start relative p-3 bg-secondary w-full', hasErrors && 'bg-destructive/30')}>
             <NodeParamField param={input} nodeId={nodeId} disabled={isConnected} />

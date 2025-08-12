@@ -89,42 +89,40 @@ if (inputsWithError.length > 0) {
 }
     return {executionPlan}
 }
-function getInvalidInputs(node:AppNode, edges:Edge[], planned: Set<string>): string[] {
-    const invalidInputs = []
-    const inputs = TaskRegistry[node.data.type].inputs
+function getInvalidInputs(node: AppNode, edges: Edge[], planned: Set<string>): string[] {
+    const invalidInputs: string[] = []
+    const inputs = TaskRegistry[node.data.type].inputs || []
+
     for (const input of inputs) {
-        const inputValue = node.data.inputs[input.name]
-        const inputValueProvided = inputValue?.length > 0
+        const inputValue = node.data.inputs?.[input.name]
+        const inputValueProvided = Array.isArray(inputValue) 
+            ? inputValue.length > 0 
+            : !!inputValue // handles string/number cases too
+
         if (inputValueProvided) {
-            // this input is fine, so we move on
             continue
         }
-        // If a value is not provided by the user than we need to check
-        // if there is an input linked to the current input
-        const incomingEdges = edges.filter((edge) => edge.target === node.id)
 
+        const incomingEdges = edges.filter((edge) => edge.target === node.id)
         const inputLinkedToOutput = incomingEdges.find((edge) => edge.targetHandle === input.name)
 
-        const requiredInputProvidedByVisitedOutput = input.required && inputLinkedToOutput && planned.has(inputLinkedToOutput.source)
+        const requiredInputProvidedByVisitedOutput =
+            input.required &&
+            inputLinkedToOutput &&
+            planned.has(inputLinkedToOutput.source)
 
         if (requiredInputProvidedByVisitedOutput) {
-            // the input is required and we have a valid value for it
-            // provided by a task that has already been planned
             continue
-        }else if (!input.required){
-            // if the input is not required but there is an output linked to it
-            // then we need to be sure that the output is already planned
+        } else if (!input.required) {
             if (!inputLinkedToOutput) continue
-            if (inputLinkedToOutput && planned.has(inputLinkedToOutput.source)) {
-                // The output is providing a value for the input
-                // The input is fine
-                continue
-            }
+            if (planned.has(inputLinkedToOutput.source)) continue
         }
+
         invalidInputs.push(input.name)
     }
     return invalidInputs
 }
+
 
 function getIncomers(node: AppNode, nodes: AppNode[], edges: Edge[]){
     if (!node.id){
