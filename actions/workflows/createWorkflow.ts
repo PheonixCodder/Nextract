@@ -46,7 +46,8 @@ export async function CreateWorkflow( form : createWorkflowSchemaType ){
             userId,
             status: WorkflowStatus.DRAFT,
             definition: JSON.stringify(initialFlow),
-            ...data
+            name: data.name,
+            description: data.description,
         }
     });
 

@@ -4,10 +4,15 @@ export enum TaskType {
   EXTRACT_TEXT_FROM_ELEMENT = "EXTRACT_TEXT_FROM_ELEMENT",
   FILL_INPUT = "FILL_INPUT",
   CLICK_ELEMENT = "CLICK_ELEMENT",
+  WAIT_FOR_ELEMENT  = "WAIT_FOR_ELEMENT",
+  DELIVER_VIA_WEBHOOK = "DELIVER_VIA_WEBHOOK",
+  EXTRACT_DATA_WITH_AI = "EXTRACT_DATA_WITH_AI",
 }
 export enum TaskParamType {
   STRING = "STRING",
   BROWSER_INSTANCE = "BROWSER_INSTANCE",
+  SELECT = "SELECT",
+  CREDENTIAL = "CREDENTIAL",
 }
 
 export interface TaskParam {
@@ -16,5 +21,6 @@ export interface TaskParam {
   helperText?: string;
   required?: boolean;
   hideHandle?: boolean;
+  options?: { label: string; value: string }[];
   [key: string]: any;
 }

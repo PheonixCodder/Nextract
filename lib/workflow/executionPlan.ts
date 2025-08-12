@@ -63,7 +63,6 @@ export function FlowToExecutionPlan(nodes:AppNode[], edges:Edge[]):FlowToExecuti
                     // if all incoming incomers/edges are planned and there are still invalid inputs
                     // it means that the current node has an invalid input that is not yet planned
                     // which means that the workflow is not valid
-                    console.error("Invalid workflow")
                     inputsWithError.push({
                         nodeId: currentNode.id,
                         inputs: invalidInputs
