@@ -8,4 +8,9 @@ const HomePage = () => {
   )
 }
 
+async function PeriodSelectorWrapper(){
+  const periods = await GetPeriods()
+  return <div></div>
+}
+
 export default HomePage

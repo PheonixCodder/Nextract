@@ -1,9 +1,11 @@
 'use client'
 
 import { AccordionTrigger, Accordion, AccordionItem, AccordionContent } from '@/components/ui/accordion'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TaskRegistry } from '@/lib/workflow/task/registry'
 import { TaskType } from '@/types/task'
+import { CoinsIcon } from 'lucide-react'
 import React from 'react'
 
 const TaskMenu = () => {
@@ -26,6 +28,8 @@ const TaskMenu = () => {
                 </AccordionTrigger>
                 <AccordionContent className='flex flex-col gap-1'>
                     <TaskMenuBtn taskType={TaskType.FILL_INPUT} />
+                    <TaskMenuBtn taskType={TaskType.NAVIGATE_URL} />
+                    <TaskMenuBtn taskType={TaskType.SCROLL_ELEMENT} />
                     <TaskMenuBtn taskType={TaskType.CLICK_ELEMENT} />
                 </AccordionContent>
             </AccordionItem>
@@ -51,6 +55,7 @@ const TaskMenu = () => {
                 </AccordionTrigger>
                 <AccordionContent className='flex flex-col gap-1'>
                     <TaskMenuBtn taskType={TaskType.READ_PROPERTY_FROM_JSON} />
+                    <TaskMenuBtn taskType={TaskType.ADD_PROPERTY_TO_JSON} />
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
@@ -74,6 +79,10 @@ function TaskMenuBtn({ taskType }: {taskType : TaskType}) {
             <task.icon size={20} />
             {task.label}
             </div>
+            <Badge className='flex gap-2 items-center' variant={'outline'}>
+                <CoinsIcon size={16} />
+                {task.credits}
+            </Badge>
         </Button>
     )
 }
