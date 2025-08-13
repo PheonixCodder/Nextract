@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma"
+import { Period } from "@/types/analytics"
 import { auth } from "@clerk/nextjs/server"
 
 export async function GetPeriods() {
@@ -15,11 +16,12 @@ export async function GetPeriods() {
 
     const minYear = years._min.startedAt ? years._min.startedAt.getFullYear() : currentYear
 
-    const periods = []
+    const periods: Period[] = []
 
     for(let i = minYear; i <= currentYear; i++) {
         for (let month = 1; month <= 11; month++) {
             periods.push({year : i, month})
         }
     }
+    return periods
 }
