@@ -16,6 +16,7 @@ const CredentialsPage = () => {
           <h1 className="text-3xl font-bold">Credentials</h1>
           <p className="text-muted-foreground">Manage your credentials here.</p>
         </div>
+        <CreateCredentialDialog triggerText="Create credential" />
       </div>
       <div className="h-full py-6 space-y-8">
         <Alert>

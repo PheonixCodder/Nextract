@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/chart";
 import { ChartColumnStacked, Layers2 } from "lucide-react";
 import React from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 type ChartData = Awaited<ReturnType<typeof GetCreditsUsageInPeriod>>;
 const chartConfig = {
@@ -26,7 +26,7 @@ const chartConfig = {
         label : 'Successful Phases Credits',
         color : 'hsl(var(--chart-2))'
     },
-    failure: {
+    failed: {
         label : 'Failed Phases Credits',
         color : 'hsl(var(--chart-1))'
     }

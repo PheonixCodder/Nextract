@@ -28,6 +28,12 @@ export default function RootLayout({
       }
     }}>
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://js.braintreegateway.com/web/dropin/1.42.0/css/dropin.min.css"
+        />
+      </head>
       <body
         className={`${inter.className}`}
       >

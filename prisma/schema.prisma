@@ -91,6 +91,14 @@ model UserBalance {
   credits Int @default(0)
 }
 
+model Transaction {
+  userId String @id
+  credits Int @default(0)
+  transactionId String @default("")
+  price Decimal @default(0)
+  planId String @default("")
+}
+
 model Credential {
   id String @id @default(cuid())
   userId String

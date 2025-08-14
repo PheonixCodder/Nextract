@@ -26,7 +26,7 @@ const chartConfig = {
         label : 'Success',
         color : 'hsl(var(--chart-2))'
     },
-    failure: {
+    failed: {
         label : 'Failed',
         color : 'hsl(var(--chart-1))'
     }
