@@ -92,11 +92,13 @@ model UserBalance {
 }
 
 model Transaction {
-  userId String @id
+  id String @id @default(cuid())
+  userId String
   credits Int @default(0)
   transactionId String @default("")
   price Decimal @default(0)
   planId String @default("")
+  completedAt DateTime
 }
 
 model Credential {

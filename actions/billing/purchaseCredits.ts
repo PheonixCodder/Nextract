@@ -12,7 +12,7 @@ export async function PurchaseCredits({packId,transactionId}:{packId: PackId, tr
 
   const selectedPack = getCreditsPack(packId);
 
-  await prisma.transaction.upsert({
+  await prisma.userBalance.upsert({
     where:{userId},
     create: {
       userId,
@@ -31,6 +31,7 @@ export async function PurchaseCredits({packId,transactionId}:{packId: PackId, tr
       transactionId: transactionId, // Subscription ID from Braintree
       price: selectedPack.price / 100,
       credits: selectedPack.credits, // Associated credits for the subscription
+      completedAt : new Date(),
     },
   });
 }
