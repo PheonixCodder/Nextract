@@ -1,26 +1,37 @@
-"use server";
-
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-export async function SetupUser() {
-  const { userId } = await auth();
-  if (!userId) {
-    throw new Error("You are not Authenticated");
-  }
-  const balance = await prisma.userBalance.findUnique({
+export async function SetupUser(userId: string) {
+  // const balance = await prisma.userBalance.findUnique({
+  //   where: {
+  //     userId,
+  //   },
+  // });
+  // if (!balance) {
+  //   await prisma.userBalance.create({
+  //     data: {
+  //       userId,
+  //       credits: 100,
+  //     },
+  //   });
+  // }
+
+  // Use upsert instead of separate find and create
+  try {
+  await prisma.userBalance.upsert({
     where: {
       userId,
     },
+    create: {
+      userId,
+      credits: 1000,
+    },
+    update: {}, // If record exists, don't update anything
   });
-  if (!balance) {
-    await prisma.userBalance.create({
-      data: {
-        userId,
-        credits: 100,
-      },
-    });
-  }
-  redirect('/')
+} catch (e) {
+  throw Error(e)
+}
+
+  redirect("/");
 }
