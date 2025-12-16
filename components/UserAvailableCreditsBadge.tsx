@@ -13,7 +13,7 @@ const UserAvailableCreditsBadge = () => {
     const query = useQuery({
         queryKey: ['userAvailableCredits'],
         queryFn: ()=> getAvailableCredits(),
-        refetchInterval: 30 * 1000, // 30 seconds
+        // refetchInterval: 30 * 1000, // 30 seconds
     })
   return (
     <Link href={'/billing'} className={cn('w-full space-x-2 items-center', buttonVariants({variant:'outline'}))} >

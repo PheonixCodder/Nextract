@@ -1,33 +1,49 @@
-'use client'
+import React from "react";
 import { LucideIcon } from "lucide-react";
 import { DialogHeader, DialogTitle } from "./ui/dialog";
 import { cn } from "@/lib/utils";
 import { Separator } from "./ui/separator";
 
-interface Props {
-    title?: string;
-    subTitle?: string;
-    icon?: LucideIcon;
-
-    titleClassName?: string;
-    subTitleClassName?: string;
-    iconClassName?: string;
+interface CustomDialogHeaderProps {
+  icon?: LucideIcon;
+  title?: string;
+  subtitle?: string;
+  iconClassName?: string;
+  titleClassName?: string;
+  subtitleClassName?: string;
 }
-export default function CustomDialogHeader(props: Props) {
-    const Icon = props.icon
-    const Title = props.title
-    const SubTitle = props.subTitle
 
-    return (
-        <DialogHeader className="py-6">
-            <DialogTitle asChild>
-                <div className="flex flex-col items-center gap-2 mb-2">
-                    {Icon &&( <Icon size={30} className={cn('stroke-primary', props.iconClassName)} />)}
-                    {Title && (<p className={cn('text-xl text-primary', props.titleClassName)}>{Title}</p>)}
-                    {SubTitle && (<p className={cn('text-sm text-muted-foreground', props.subTitleClassName)}>{SubTitle}</p>)}
-                </div>
-            </DialogTitle>
-            <Separator />
-        </DialogHeader>
-    )
+function CustomDialogHeader(props: CustomDialogHeaderProps) {
+  return (
+    <DialogHeader className="py-6">
+      <DialogTitle asChild>
+        <div className="flex flex-col items-center gap-2 mb-2">
+          {props.icon && (
+            <props.icon
+              size={30}
+              className={cn("stroke-primary", props.iconClassName)}
+            />
+          )}
+          {props.title && (
+            <p className={cn("text-lg text-primary", props.titleClassName)}>
+              {props.title}
+            </p>
+          )}
+          {props.subtitle && (
+            <p
+              className={cn(
+                "text-sm text-muted-foreground",
+                props.subtitleClassName
+              )}
+            >
+              {props.subtitle}
+            </p>
+          )}
+        </div>
+      </DialogTitle>
+      <Separator />
+    </DialogHeader>
+  );
 }
+
+export default CustomDialogHeader;

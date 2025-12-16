@@ -3,8 +3,9 @@
 import { ThemeProvider } from "next-themes";
 import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Loader2Icon } from "lucide-react";
+import { LocalCronRunner } from "../LocalCronRunner";
+import NextTopLoader from "nextjs-toploader";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
     const [isClient, setIsClient] = useState(false);
@@ -21,10 +22,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
     return (
         <QueryClientProvider client={queryClient}>
+                  <NextTopLoader color="#10b981" showSpinner={false} />
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 {children}
             </ThemeProvider>
-            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
+                  <LocalCronRunner />
+            {/* {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />} */}
         </QueryClientProvider>
     );
 }
