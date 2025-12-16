@@ -1,17 +1,18 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { ExecuteWorkflow } from "@/lib/workflow/executeWorkflow";
 import { FlowToExecutionPlan } from "@/lib/workflow/executionPlan";
+import { ExecuteWorkflow } from "@/lib/workflow/executeWorkflow";
 import { TaskRegistry } from "@/lib/workflow/task/registry";
 import {
-  ExecutionPhaseStatus,
-  WorkflowExecutionPlan,
   WorkflowExecutionStatus,
   WorkflowExecutionTrigger,
+  WorkflowExecutionPlan,
+  ExecutionPhaseStatus,
   WorkflowStatus,
 } from "@/types/workflow";
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 export async function RunWorkflow(form: {
@@ -19,42 +20,35 @@ export async function RunWorkflow(form: {
   flowDefinition?: string;
 }) {
   const { userId } = await auth();
-  if (!userId) {
-    throw new Error("User is not authenticated");
-  }
+  if (!userId) throw new Error("unauthorized");
   const { workflowId, flowDefinition } = form;
-  if (!workflowId) {
-    throw new Error("Workflow ID is required");
-  }
-  const workflow = await prisma.workflow.findUnique({
-    where: {
-      userId,
-      id: workflowId,
-    },
-  });
-  if (!workflow) {
-    throw new Error("Workflow not found");
-  }
-  let executionPlan: WorkflowExecutionPlan;
+  if (!workflowId) throw new Error("workflowId is required");
 
-  let workflowDefinition = flowDefinition
+  const workflow = await prisma.workflow.findUnique({
+    where: { userId, id: workflowId },
+  });
+
+  if (!workflow) throw new Error("workflow not found");
+
+  let executionPlan: WorkflowExecutionPlan;
+  let workflowDefinition = flowDefinition;
 
   if (workflow.status === WorkflowStatus.PUBLISHED) {
+    if (!workflow.executionPlan)
+      throw new Error("no execution plan found for published workflow");
     executionPlan = JSON.parse(workflow.executionPlan);
-    workflowDefinition = workflow.definition
+    workflowDefinition = workflow.definition;
   } else {
+    //workflow is draft
     if (!flowDefinition) {
-      throw new Error("Flow definition is required");
+      throw new Error("flow definition is not defined");
     }
     const flow = JSON.parse(flowDefinition);
     const result = FlowToExecutionPlan(flow.nodes, flow.edges);
-    if (result?.error) {
-      throw new Error("Flow definition is invalid");
-    }
-    if (!result?.executionPlan) {
-      throw new Error("No execution plan generated");
-    }
-    // eslint-disable-next-line prefer-const
+
+    if (result.error) throw new Error("flow definition is not valid");
+    if (!result.executionPlan) throw new Error("no execution plan generated");
+
     executionPlan = result.executionPlan;
   }
 
@@ -85,11 +79,11 @@ export async function RunWorkflow(form: {
       phases: true,
     },
   });
-  if (!execution) {
-    throw new Error("Workflow execution not created");
-  }
-
-  ExecuteWorkflow(execution.id);
-  revalidatePath("/workflow/runs");
-  return `/workflow/runs/${workflowId}/${execution.id}`;
+  if (!execution) throw new Error("execution not created");
+  console.log(1)
+  ExecuteWorkflow(execution.id); // run this on background
+  console.log(2)
+  revalidatePath("/workflows/runs");
+console.log(3)
+  return execution;
 }
