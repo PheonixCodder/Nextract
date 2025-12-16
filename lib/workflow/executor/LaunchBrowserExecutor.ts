@@ -2,6 +2,7 @@ import { chromium, type Browser } from "playwright-core";
 import chromiumLambda from "@sparticuz/chromium";
 import { ExecutionEnvironment } from "@/types/executor";
 import { LaunchBrowserTask } from "../task/LaunchBrowser";
+export const runtime = "nodejs";
 
 export async function LaunchBrowserExecutor(
   environment: ExecutionEnvironment<typeof LaunchBrowserTask>

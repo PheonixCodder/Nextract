@@ -2,6 +2,8 @@ import { ExecutionEnvironment } from "@/types/executor";
 import { ScrollToElementTask } from "../task/ScrollToElement";
 import type { Page } from "playwright-core";
 
+export const runtime = "nodejs";
+
 export async function ScrollToElementExecutor(
   environment: ExecutionEnvironment<typeof ScrollToElementTask>
 ): Promise<boolean> {

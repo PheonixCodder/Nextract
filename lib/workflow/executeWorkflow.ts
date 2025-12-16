@@ -19,6 +19,8 @@ import { createLogCollector } from "../log";
 import { checkAndReserveWorkflowCredits } from "./creditCheck";
 import { getCredentialValue } from "../credential/getCredentialValue";
 
+export const runtime = "nodejs";
+
 export async function ExecuteWorkflow(executionId: string, nextRun?: Date) {
   const execution = await prisma.workflowExecution.findUnique({
     where: { id: executionId },
