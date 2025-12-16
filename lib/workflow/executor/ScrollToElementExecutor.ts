@@ -1,6 +1,6 @@
 import { ExecutionEnvironment } from "@/types/executor";
 import { ScrollToElementTask } from "../task/ScrollToElement";
-import type { Page } from "playwright";
+import type { Page } from "playwright-core";
 
 export const runtime = "nodejs";
 
