@@ -1,16 +1,16 @@
-export const LogLevels = ["info","error",'warning'] as const;
-export type LogLevel = (typeof LogLevels)[number]
+export const LogLevels = ["info", "error", "warning"] as const;
+export type LogLevel = (typeof LogLevels)[number];
 
-export type LogFunction = (message:string) => void
+export type LogFunction = (message: string) => void;
 
 export type Log = {
-    message: string;
-    level: LogLevel
-    timestamp : Date
-}
+  message: string;
+  level: LogLevel;
+  timestamp: Date;
+};
 
 export type LogCollector = {
-    getAll(): Log[]
+  getAll(): Log[];
 } & {
-    [K in LogLevel] : LogFunction
-}
+  [K in LogLevel]: LogFunction;
+};
