@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import { GetWorkflowExecutions } from "@/actions/workflows/getWorkflowExecutions";
-import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import {
   Table,
   TableBody,
@@ -10,9 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DateToDurationString } from "@/lib/helper/dates";
-import { useQuery } from "@tanstack/react-query";
-import React from "react";
+import { DatesToDurationString } from "@/lib/helper/dates";
+import { Badge } from "@/components/ui/badge";
 import ExecutionStatusIndicator from "./ExecutionStatusIndicator";
 import { WorkflowExecutionStatus } from "@/types/workflow";
 import { CoinsIcon } from "lucide-react";
@@ -20,22 +20,21 @@ import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 
 type InitialDataType = Awaited<ReturnType<typeof GetWorkflowExecutions>>;
-
-const ExecutionsTable = ({
+export default function ExecutionsTable({
   workflowId,
   initialData,
 }: {
   workflowId: string;
   initialData: InitialDataType;
-}) => {
+}) {
+  const router = useRouter();
   const query = useQuery({
     queryKey: ["executions", workflowId],
     initialData,
     queryFn: () => GetWorkflowExecutions(workflowId),
-    refetchInterval: 5000,
+    refetchInterval: 5000, //TODO
   });
 
-  const router = useRouter();
   return (
     <div className="border rounded-lg shadow-md overflow-auto">
       <Table className="h-full">
@@ -45,13 +44,13 @@ const ExecutionsTable = ({
             <TableHead>Status</TableHead>
             <TableHead>Consumed</TableHead>
             <TableHead className="text-right text-xs text-muted-foreground">
-              Started At (desc)
+              Started at (desc)
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="gap-2 h-full overflow-auto">
           {query.data.map((execution) => {
-            const duration = DateToDurationString(
+            const duration = DatesToDurationString(
               execution.completedAt,
               execution.startedAt
             );
@@ -60,21 +59,20 @@ const ExecutionsTable = ({
               formatDistanceToNow(execution.startedAt, {
                 addSuffix: true,
               });
+
             return (
               <TableRow
                 key={execution.id}
                 className="cursor-pointer"
                 onClick={() => {
-                  router.push(
-                    `/workflow/runs/${execution.workflowId}/${execution.id}`
-                  );
+                  router.push(`/workflow/runs/${workflowId}/${execution.id}`);
                 }}
               >
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-semibold">{execution.id}</span>
                     <div className="text-muted-foreground text-xs">
-                      <span>Triggered Via </span>
+                      <span>Triggered via</span>
                       <Badge variant={"outline"}>{execution.trigger}</Badge>
                     </div>
                   </div>
@@ -117,6 +115,4 @@ const ExecutionsTable = ({
       </Table>
     </div>
   );
-};
-
-export default ExecutionsTable;
+}

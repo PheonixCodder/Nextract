@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { auth } from '@clerk/nextjs/server';
 import { getWorkflow } from '@/actions/workflows/getWorkflowForUser';
-import Editor from '../../_components/Editor';
+import Editor from '@/app/workflow/_components/Editor';
 
 
 export default async function WorkflowEditorPage ({ params } :{ params: { workflowId: string } }) {

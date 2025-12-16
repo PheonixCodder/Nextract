@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import { ExecutionPhaseStatus } from '@/types/workflow'
 import { CircleCheckIcon, CircleDashedIcon, CircleXIcon, Loader2Icon } from 'lucide-react'
 import React from 'react'
