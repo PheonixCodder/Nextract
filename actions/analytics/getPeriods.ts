@@ -1,27 +1,32 @@
-import prisma from "@/lib/prisma"
-import { Period } from "@/types/analytics"
-import { auth } from "@clerk/nextjs/server"
+"use server";
+import prisma from "@/lib/prisma";
+import { Period } from "@/types/analytics";
+import { auth } from "@clerk/nextjs/server";
 
-export async function GetPeriods() {
-    const {userId} = await auth()
-    if (!userId) {
-        throw new Error('You are not Authenticated')
+export const GetPeriods = async () => {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("unauthorized");
+  }
+  const years = await prisma.workflowExecution.aggregate({
+    where: {
+      userId,
+    },
+    _min: {
+      startedAt: true,
+    },
+  });
+  const currentYear = new Date().getFullYear();
+  const minYear = years._min?.startedAt?.getFullYear() || currentYear;
+  const periods: Period[] = [];
+
+  for (let year = minYear; year <= currentYear; year++) {
+    for (let month = 0; month <= 11; month++) {
+      periods.push({
+        year,
+        month,
+      });
     }
-    const years = await prisma.workflowExecution.aggregate({
-        where : {userId},
-        _min : {startedAt : true}
-    })
-
-    const currentYear = new Date().getFullYear()
-
-    const minYear = years._min.startedAt ? years._min.startedAt.getFullYear() : currentYear
-
-    const periods: Period[] = []
-
-    for(let i = minYear; i <= currentYear; i++) {
-        for (let month = 1; month <= 11; month++) {
-            periods.push({year : i, month})
-        }
-    }
-    return periods
-}
+  }
+  return periods;
+};

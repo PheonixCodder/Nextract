@@ -1,3 +1,5 @@
+"use server";
+
 import { PeriodToDateRange } from "@/lib/helper/dates";
 import prisma from "@/lib/prisma";
 import { Period } from "@/types/analytics";
@@ -5,16 +7,17 @@ import { WorkflowExecutionStatus } from "@/types/workflow";
 import { auth } from "@clerk/nextjs/server";
 import { eachDayOfInterval, format } from "date-fns";
 
-
-type Stats = Record<string , {
-    success: number,
-    failed: number,
-  }>
-
-export async function GetWorkflowExecutionStats(period: Period) {
+type Stats = Record<
+  string,
+  {
+    success: number;
+    failed: number;
+  }
+>;
+export const GetWorkflowExecutionsStats = async (period: Period) => {
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("You are not Authenticated");
+    throw new Error("User not found");
   }
   const dateRange = PeriodToDateRange(period);
   const executions = await prisma.workflowExecution.findMany({
@@ -22,11 +25,10 @@ export async function GetWorkflowExecutionStats(period: Period) {
       userId,
       startedAt: {
         gte: dateRange.startDate,
-        lte: dateRange.endDate,
+        lt: dateRange.endDate,
       },
     },
   });
-
   const dateFormat = "yyyy-MM-dd";
 
   const stats: Stats = eachDayOfInterval({
@@ -43,19 +45,21 @@ export async function GetWorkflowExecutionStats(period: Period) {
     }, {} as any);
 
   executions.forEach((execution) => {
-    const date = format(execution.startedAt, dateFormat);
-    if (execution.status === WorkflowExecutionStatus.COMPLETED){
-        stats[date].success++;
+    const date = format(execution.startedAt!, dateFormat);
+    if (execution.status === WorkflowExecutionStatus.COMPLETED) {
+      stats[date].success += 1;
     }
-    if (execution.status === WorkflowExecutionStatus.FAILED){
-        stats[date].failed++;
+
+    if (execution.status === WorkflowExecutionStatus.FAILED) {
+      stats[date].failed += 1;
     }
   });
+  const result = Object.entries(stats).map(([date, infos]) => {
+    return {
+      date,
+      ...infos,
+    };
+  });
 
-  const result = Object.entries(stats).map(([date, infos]) => ({
-    date,
-    ...infos
-  }) )
-
-  return result
-}
+  return result;
+};

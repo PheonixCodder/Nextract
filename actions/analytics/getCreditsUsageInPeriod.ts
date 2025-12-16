@@ -1,37 +1,29 @@
+"use server";
+
 import { PeriodToDateRange } from "@/lib/helper/dates";
 import prisma from "@/lib/prisma";
 import { Period } from "@/types/analytics";
-import { ExecutionPhaseStatus, WorkflowExecutionStatus } from "@/types/workflow";
+import { ExecutionPhaseStatus } from "@/types/workflow";
 import { auth } from "@clerk/nextjs/server";
 import { eachDayOfInterval, format } from "date-fns";
 
-
-type Stats = Record<string , {
-    success: number,
-    failed: number,
-  }>
-
-export async function GetCreditsUsageInPeriod(period: Period) {
+type Stats = Record<
+  string,
+  {
+    success: number;
+    failed: number;
+  }
+>;
+const { COMPLETED, FAILED } = ExecutionPhaseStatus;
+export const GetCreditUsageInPeriod = async (period: Period) => {
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("You are not Authenticated");
+    throw new Error("User not found");
   }
   const dateRange = PeriodToDateRange(period);
-  const executionPhases = await prisma.executionPhase.findMany({
-    where: {
-      userId,
-      startedAt: {
-        gte: dateRange.startDate,
-        lte: dateRange.endDate,
-      },
-      status : {
-        in: [ExecutionPhaseStatus.COMPLETED, ExecutionPhaseStatus.FAILED]
-      }
-    },
-  });
-
   const dateFormat = "yyyy-MM-dd";
 
+  // Initialize the stats object for the date range
   const stats: Stats = eachDayOfInterval({
     start: dateRange.startDate,
     end: dateRange.endDate,
@@ -45,20 +37,60 @@ export async function GetCreditsUsageInPeriod(period: Period) {
       return acc;
     }, {} as any);
 
-  executionPhases.forEach((phase) => {
-    const date = format(phase.startedAt, dateFormat);
-    if (phase.status === ExecutionPhaseStatus.COMPLETED){
-        stats[date].success += phase.creditsConsumed || 0
+  // Process data in batches to prevent exceeding Prisma's response size limit
+  let processedAll = false;
+  let skip = 0;
+  const batchSize = 1000; // Adjust based on your data size
+
+  while (!processedAll) {
+    const executionsPhases = await prisma.executionPhase.findMany({
+      where: {
+        userId,
+        startedAt: {
+          gte: dateRange.startDate,
+          lt: dateRange.endDate,
+        },
+        status: {
+          in: [COMPLETED, FAILED],
+        },
+      },
+      select: {
+        startedAt: true,
+        status: true,
+        creditsConsumed: true,
+      },
+      skip: skip,
+      take: batchSize,
+      orderBy: {
+        startedAt: "asc",
+      },
+    });
+
+    // If we got fewer records than the batch size, we've processed everything
+    if (executionsPhases.length < batchSize) {
+      processedAll = true;
     }
-    if (phase.status === ExecutionPhaseStatus.FAILED){
-        stats[date].failed += phase.creditsConsumed || 0
-    }
+
+    // Process this batch
+    executionsPhases.forEach((phase) => {
+      const date = format(phase.startedAt!, dateFormat);
+      if (phase.status === COMPLETED) {
+        stats[date].success += phase.creditsConsumed || 0;
+      } else if (phase.status === FAILED) {
+        stats[date].failed += phase.creditsConsumed || 0;
+      }
+    });
+
+    // Move to the next batch
+    skip += batchSize;
+  }
+
+  const result = Object.entries(stats).map(([date, infos]) => {
+    return {
+      date,
+      ...infos,
+    };
   });
 
-  const result = Object.entries(stats).map(([date, infos]) => ({
-    date,
-    ...infos
-  }) )
-
-  return result
-}
+  return result;
+};
