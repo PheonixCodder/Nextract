@@ -7,47 +7,44 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 model Workflow {
-  id String   @id @default(cuid())
-  userId String
-  name String
-  description String?
-
-  definition String
+  id            String  @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  definition    String
   executionPlan String?
-  creditsCost Int @default(0)
-  status String
+  creditsCost   Int     @default(0)
+  status        String // DRAFT | PUBLISHED
 
   cron String?
 
-  lastRunAt DateTime?
-  lastRunId String?
+  lastRunAt     DateTime?
+  lastRunId     String?
   lastRunStatus String?
-  nextRunAt DateTime?
+  nextRunAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  executions WorkflowExecution[]
+  executionLogs WorkflowExecution[]
 
-  // User can not have two workflows with the same name
   @@unique([name, userId])
 }
 
-model WorkflowExecution{
-  id String   @id @default(cuid())
-  workflowId String
-  userId String
-  trigger String
-  status String
-  createdAt DateTime @default(now())
-  startedAt DateTime?
+model WorkflowExecution {
+  id          String    @id @default(cuid())
+  workflowId  String
+  userId      String
+  trigger     String
+  status      String
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
   completedAt DateTime?
-  definition String @default("{}")
+  definition  String    @default("{}")
 
   creditsConsumed Int @default(0)
 
@@ -57,57 +54,57 @@ model WorkflowExecution{
 }
 
 model ExecutionPhase {
-  id String   @id @default(cuid())
-  userId String
-  status String
-  number Int
-  node String
-  name String
-  startedAt DateTime?
+  id          String    @id @default(cuid())
+  userId      String
+  status      String
+  number      Int
+  node        String
+  name        String
+  startedAt   DateTime?
   completedAt DateTime?
-  inputs String?
-  outputs String?
+  inputs      String?
+  outputs     String?
 
-  creditsConsumed Int?
+  creditsConsumed     Int?
+  execution           WorkflowExecution? @relation(fields: [workflowExecutionId], references: [id], onDelete: Cascade)
   workflowExecutionId String
-  execution WorkflowExecution @relation(fields: [workflowExecutionId], references: [id], onDelete: Cascade)
-
-  logs ExecutionLog[]
+  logs                ExecutionLog[]
 }
 
-
 model ExecutionLog {
-  id String   @id @default(cuid())
-  logLevel String
-  message String
-  timestamp DateTime @default(now())
-
+  id               String         @id @default(cuid())
+  logLevel         String
+  message          String
+  timestamp        DateTime       @default(now())
   executionPhaseId String
-  executionPhase ExecutionPhase @relation(fields: [executionPhaseId], references: [id], onDelete: Cascade)
+  executionPhase   ExecutionPhase @relation(fields: [executionPhaseId], references: [id], onDelete: Cascade)
 }
 
 model UserBalance {
-  userId String @id
-  credits Int @default(0)
-}
-
-model Transaction {
-  id String @id @default(cuid())
-  userId String
-  credits Int @default(0)
-  transactionId String @default("")
-  price Decimal @default(0)
-  planId String @default("")
-  completedAt DateTime
+  userId  String @id
+  credits Int    @default(0)
 }
 
 model Credential {
-  id String @id @default(cuid())
+  id     String @id @default(cuid())
   userId String
-  name String
-  value String
+  name   String
+  value  String // This will store the encrypted JSON credential data
+  type   String // The credential type (smtp_email, api_key, custom)
+
+  description String?
 
   createdAt DateTime @default(now())
 
-  @@unique([name, userId])
+  @@unique([userId, name])
+}
+
+model UserPurchase {
+  id          String   @id @default(cuid())
+  userId      String
+  stripeId    String
+  description String
+  amount      Int
+  currency    String
+  date        DateTime @default(now())
 }
