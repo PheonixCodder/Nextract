@@ -14,40 +14,26 @@ export async function CreateCredential(form: createCredentialSchemaType) {
   if (!success) {
     throw new Error("Invalid form data");
   }
-
   const { userId } = await auth();
   if (!userId) {
-    throw new Error("You are not Authenticated");
+    throw new Error("unauthorized");
   }
 
-  const existingCredential = await prisma.credential.findUnique({
-  where: {
-    name_userId: {
-      name: data.name,
-      userId: userId,
-    },
-  },
-});
+  // Convert the structured credential data to JSON string
+  const credentialValue = JSON.stringify(data.credentialData.data);
+  const encryptedValue = symmetricEncrypt(credentialValue);
 
-
-  if (existingCredential) {
-    throw new Error(
-      "A credential with this name already exists for your account"
-    );
-  }
-
-  const encryptedValue = await symmetricEncrypt(data.value);
   const result = await prisma.credential.create({
     data: {
       userId,
       name: data.name,
       value: encryptedValue,
+      type: data.credentialData.type,
+      description: data.description,
     },
   });
-
   if (!result) {
     throw new Error("Failed to create credential");
   }
-
   revalidatePath("/credentials");
 }
