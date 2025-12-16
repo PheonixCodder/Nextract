@@ -1,34 +1,37 @@
-import { RunWorkflow } from '@/actions/workflows/runWorkFlow'
-import useExecutionPlan from '@/components/hooks/useExecutionPlan'
-import { Button } from '@/components/ui/button'
-import { useMutation } from '@tanstack/react-query'
-import { useReactFlow } from '@xyflow/react'
-import { Loader2Icon, PlayIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import React from 'react'
-import { toast } from 'sonner'
+"use client";
 
-const RunBtn = ({workflowId}:{workflowId : string}) => {
-    const router = useRouter()
+import { RunWorkflow } from "@/actions/workflows/runWorkFlow";
+import { Button } from "@/components/ui/button";
+import { useMutation } from "@tanstack/react-query";
+import { PlayIcon } from "lucide-react";
+import React from "react";
+import { toast } from "sonner";
+
+function RunBtn({ workflowId }: { workflowId: string }) {
   const mutation = useMutation({
     mutationFn: RunWorkflow,
-    onSuccess: (url) => {
-      toast.success('Execution Started', {id: 'flow-execution'})
-      router.push(url)
+    onSuccess: () => {
+      toast.success("Workflow started successfully", { id: workflowId });
     },
     onError: (error) => {
-      toast.error(error.message, {id: 'flow-execution'})
-      },
-  })
+      toast.error(error.message, { id: workflowId });
+    },
+  });
   return (
-    <Button variant={'outline'} size={'sm'} className='flex items-center gap-2' disabled={mutation.isPending} onClick={()=>{
-        toast.loading('Scheduling Execution', {id: 'flow-execution'})
-        mutation.mutate({workflowId})
-    }}>
-        {mutation.isPending ? <Loader2Icon className='animate-spin' /> : <PlayIcon size={16} className=''/>}
-        <span>Run</span>
+    <Button
+      variant={"outline"}
+      size={"sm"}
+      className="flex items-center gap-2"
+      disabled={mutation.isPending}
+      onClick={() => {
+        toast.loading("Starting run...", { id: workflowId });
+        mutation.mutate({ workflowId });
+      }}
+    >
+      <PlayIcon size={16} />
+      Run
     </Button>
-  )
+  );
 }
 
-export default RunBtn
+export default RunBtn;
