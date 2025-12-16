@@ -1,4 +1,4 @@
-import type { Browser, Page } from "playwright-core";
+import type { Browser, Page } from "playwright";
 import { WorkflowTask } from "./workflow";
 import { LogCollector } from "./log";
 

@@ -11,7 +11,7 @@ import { TaskRegistry } from "./task/registry";
 import { TaskParamType } from "@/types/taskType";
 import { ExecutorRegistry } from "./executor/registry";
 import { Environment, ExecutionEnvironment } from "@/types/executor";
-import type { Browser, Page } from "playwright-core";
+import type { Browser, Page } from "playwright";
 import { Edge } from "@xyflow/react";
 import { LogCollector } from "@/types/log";
 import { createLogCollector } from "../log";
