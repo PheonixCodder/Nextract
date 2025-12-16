@@ -22,18 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider afterSignOutUrl={'/sign-in'} appearance={{
-      elements : {
-        formButtonPrimary : 'bg-primary hover:bg-primary/90 text-sm !shadow-none'
-      }
-    }}>
+    <ClerkProvider>
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://js.braintreegateway.com/web/dropin/1.42.0/css/dropin.min.css"
-        />
-      </head>
       <body
         className={`${inter.className}`}
       >
