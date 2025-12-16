@@ -1,11 +1,17 @@
-import { getAppUrl } from "@/lib/helper/appUrl";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAppUrl } from "@/lib/helper/appUrl";
 import { checkWorkflowCredits } from "@/lib/workflow/creditCheck";
-import { WorkflowExecutionStatus, WorkflowStatus } from "@/types/workflow";
+import { WorkflowStatus } from "@/types/workflow";
 import { parseWorkflowSchedule } from "@/lib/cron/scheduleParser";
 
-export async function GET(req: Request, res: Response) {
+/**
+ * Cron executor endpoint
+ * Triggered by an external scheduler or platform cron
+ */
+export async function GET(req: NextRequest) {
   const now = new Date();
+
   const workflows = await prisma.workflow.findMany({
     select: {
       id: true,
@@ -16,39 +22,35 @@ export async function GET(req: Request, res: Response) {
     },
     where: {
       status: WorkflowStatus.PUBLISHED,
-      cron: {
-        not: null,
-      },
-      nextRunAt: {
-        lte: now,
-      },
+      cron: { not: null },
+      nextRunAt: { lte: now },
     },
   });
-  const workflowsRun = [];
-  const workflowsSkipped = [];
+
+  const workflowsRun: any[] = [];
+  const workflowsSkipped: any[] = [];
+
   for (const workflow of workflows) {
-    // Check if workflow can be executed (pre-check for sufficient credits)
     const creditCheckResult = await checkWorkflowCredits(workflow.id);
 
     if (creditCheckResult.canExecute) {
-      // Only trigger workflow if sufficient credits are available
       await triggerWorkflow(workflow.id);
+
       workflowsRun.push({
         id: workflow.id,
         name: workflow.name,
         creditsCost: workflow.creditsCost,
         userCredits: creditCheckResult.userCredits,
       });
+
       console.log(
-        `Triggered workflow ${workflow.name} (${workflow.id}), credits: ${creditCheckResult.userCredits}/${workflow.creditsCost}`
+        `Triggered workflow ${workflow.name} (${workflow.id})`
       );
     } else {
-      // Handle the case where workflow can't be executed
       console.log(
-        `Skipping workflow ${workflow.name} (${workflow.id}): ${creditCheckResult.reason}, required: ${workflow.creditsCost}`
+        `Skipping workflow ${workflow.name}: ${creditCheckResult.reason}`
       );
 
-      // Import and use the logWorkflowCreditFailure function if the reason is insufficient credits
       if (
         creditCheckResult.reason === "insufficient_credits" &&
         creditCheckResult.workflow
@@ -56,6 +58,7 @@ export async function GET(req: Request, res: Response) {
         const { logWorkflowCreditFailure } = await import(
           "@/lib/workflow/creditCheck"
         );
+
         await logWorkflowCreditFailure(
           creditCheckResult.workflow.id,
           creditCheckResult.workflow.userId,
@@ -73,32 +76,30 @@ export async function GET(req: Request, res: Response) {
       });
     }
 
-    // Update the next run time based on the schedule expression
+    // Update next run time
     if (workflow.cron) {
       try {
-        const nextRunAt = await calculateNextRun(workflow.cron);
+        const nextRunAt = calculateNextRun(workflow.cron);
 
         if (nextRunAt) {
           await prisma.workflow.update({
             where: { id: workflow.id },
             data: {
               nextRunAt,
-              lastRunAt: creditCheckResult.canExecute ? now : undefined, // Only update lastRunAt if we actually ran the workflow
-              // lastRunStatus: creditCheckResult.canExecute
-              //   ? undefined
-              //   : WorkflowExecutionStatus.SKIPPED_INSUFFICIENT_CREDITS, // Record skip reason if applicable
+              lastRunAt: creditCheckResult.canExecute ? now : undefined,
             },
           });
         }
       } catch (error) {
         console.error(
-          `Failed to update next run time for workflow ${workflow.id}`,
+          `Failed to update next run for workflow ${workflow.id}`,
           error
         );
       }
     }
   }
-  return Response.json(
+
+  return NextResponse.json(
     {
       workflowsScheduled: workflows.length,
       workflowsRun: workflowsRun.length,
@@ -112,16 +113,13 @@ export async function GET(req: Request, res: Response) {
 }
 
 /**
- * Calculates the next run time based on the schedule expression
- * Supports both standard cron expressions and simplified interval formats
+ * Calculate next execution time from cron expression
  */
-async function calculateNextRun(
-  scheduleExpression: string
-): Promise<Date | null> {
-  const parsedSchedule = parseWorkflowSchedule(scheduleExpression);
+function calculateNextRun(scheduleExpression: string): Date | null {
+  const parsed = parseWorkflowSchedule(scheduleExpression);
 
-  if (parsedSchedule.isValid && parsedSchedule.nextRunDate) {
-    return parsedSchedule.nextRunDate;
+  if (parsed.isValid && parsed.nextRunDate) {
+    return parsed.nextRunDate;
   }
 
   console.error(`Invalid schedule expression: ${scheduleExpression}`);
@@ -129,8 +127,7 @@ async function calculateNextRun(
 }
 
 /**
- * Triggers a workflow execution by making a request to the execute endpoint
- * This function is called only after credit check is successful
+ * Trigger workflow execution via internal API
  */
 async function triggerWorkflow(workflowId: string) {
   const triggerApiUrl = getAppUrl(
@@ -138,7 +135,6 @@ async function triggerWorkflow(workflowId: string) {
   );
 
   try {
-    console.log(`Triggering workflow ${workflowId} (credit check passed)`);
     const response = await fetch(triggerApiUrl, {
       headers: {
         Authorization: `Bearer ${process.env.API_SECRET!}`,
@@ -149,15 +145,12 @@ async function triggerWorkflow(workflowId: string) {
 
     if (!response.ok) {
       console.error(
-        `Failed to trigger workflow ${workflowId}: HTTP ${response.status}`
+        `Failed to trigger workflow ${workflowId}: ${response.status}`
       );
-    } else {
-      console.log(`Successfully triggered workflow ${workflowId}`);
     }
   } catch (err: any) {
     console.error(
       `Failed to trigger workflow ${workflowId}`,
-      "error->",
       err.message
     );
   }

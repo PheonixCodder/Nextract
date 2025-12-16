@@ -8,19 +8,34 @@ export async function WaitForElementExecutor(
     const selector = environment.getInput("Selector");
     if (!selector) {
       environment.log.error("Input Selector is required");
+      return false;
     }
+
     const visibility = environment.getInput("Visibility");
     if (!visibility) {
       environment.log.error("Input Visibility is required");
+      return false;
     }
-    await environment.getPage()!.waitForSelector(selector, {
-      visible: visibility === "visible",
-      hidden: visibility === "hidden",
-    });
+
+    const page = environment.getPage();
+    if (!page) {
+      environment.log.error("Playwright page is not available");
+      return false;
+    }
+
+    const state =
+      visibility === "visible"
+        ? "visible"
+        : visibility === "hidden"
+        ? "hidden"
+        : "attached";
+
+    await page.waitForSelector(selector, { state });
+
     environment.log.info(`Element ${selector} is ${visibility}`);
     return true;
   } catch (e: any) {
-    environment.log.error(e.message);
+    environment.log.error(e.message ?? "Failed waiting for element");
     return false;
   }
 }
