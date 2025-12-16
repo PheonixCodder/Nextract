@@ -1,25 +1,21 @@
 import { ExecutionEnvironment } from "@/types/executor";
 import { ClickElementTask } from "../task/ClickElement";
-import { NavigateUrlTask } from "../task/NavigateUrlTask";
+import { NavigateUrlTask } from "../task/NavigateUrl";
 
 export async function NavigateUrlExecutor(
   environment: ExecutionEnvironment<typeof NavigateUrlTask>
-) {
+): Promise<boolean> {
   try {
-    const url = environment.getInput('URL');
+    const url = environment.getInput("URL");
     if (!url) {
-      environment.log.error('input->selector not found');
-    }
-    const webPage = environment.getInput('Web Page');
-    if (!webPage) {
-      environment.log.error('input->selector not found');
+      environment.log.error("Input URL is required");
     }
 
-    await environment.getPage()!.goto(url)
-    environment.log.info(`Navigated to ${url}`);
-    return true
-  } catch (error: any) {
-    environment.log.error(error.message)
+    await environment.getPage()!.goto(url);
+    environment.log.info(`Visited to ${url}`);
+    return true;
+  } catch (e: any) {
+    environment.log.error(e.message);
     return false;
   }
 }
