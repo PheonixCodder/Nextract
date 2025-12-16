@@ -1,38 +1,37 @@
 import { ExecutionEnvironment } from "@/types/executor";
-import { DeliverViaWebhookTask } from "../task/DeliverViaWebhookTask";
+import { DeliverViaWebhookTask } from "../task/DeliverViaWebhook";
 
 export async function DeliverViaWebhookExecutor(
   environment: ExecutionEnvironment<typeof DeliverViaWebhookTask>
-) {
+): Promise<boolean> {
   try {
     const targetUrl = environment.getInput("Target URL");
     if (!targetUrl) {
-      environment.log.error("input->Target URL not found");
+      environment.log.error("Input TargetUrl is required");
     }
     const body = environment.getInput("Body");
     if (!body) {
-      environment.log.error("input->Body not found");
+      environment.log.error("Input Body is required");
     }
-
-    const response = await fetch(targetUrl, {
+    const resopnse = await fetch(targetUrl, {
       method: "POST",
+      body: JSON.stringify(body),
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(body),
     });
-    const statusCode = response.status;
-    if (statusCode >= 400) {
-      environment.log.error(`Failed to deliver via webhook. Status code: ${statusCode}`);
-      return false
+    const statusCode = resopnse.status;
+    if (statusCode !== 200) {
+      environment.log.error(
+        `Failed to deliver via webhook. Status code: ${statusCode}`
+      );
+      return false;
     }
-
-    const responseBody = await response.json();
-    environment.log.info(`Delivered via webhook. Response: ${JSON.stringify(responseBody)}`);
-    
+    const resopnseBody = await resopnse.json();
+    environment.log.info(JSON.stringify(resopnseBody, null, 4));
     return true;
-  } catch (error: any) {
-    environment.log.error(error.message);
+  } catch (e: any) {
+    environment.log.error(e.message);
     return false;
   }
 }
