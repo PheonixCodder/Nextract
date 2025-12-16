@@ -1,50 +1,104 @@
 import "server-only";
-import prisma from "../prisma";
+// import prisma from "../prisma";
+import prisma from "@/lib/prisma";
 import {
   ExecutionPhaseStatus,
   WorkflowExecutionStatus,
 } from "@/types/workflow";
-import { ExecutionPhase } from "../generated/prisma";
+import { ExecutionPhase } from "@/lib/generated/prisma";
 import { AppNode } from "@/types/appNodes";
 import { TaskRegistry } from "./task/registry";
+import { TaskParamType } from "@/types/taskType";
 import { ExecutorRegistry } from "./executor/registry";
 import { Environment, ExecutionEnvironment } from "@/types/executor";
-import { TaskParamType } from "@/types/task";
-import { Browser, Page } from "puppeteer";
+import type { Browser, Page } from "playwright-core";
 import { Edge } from "@xyflow/react";
 import { LogCollector } from "@/types/log";
 import { createLogCollector } from "../log";
 
-export async function ExecuteWorkflow(executionId: string, nextRunAt?: Date) {
+import { checkAndReserveWorkflowCredits } from "./creditCheck";
+import { getCredentialValue } from "../credential/getCredentialValue";
+
+export async function ExecuteWorkflow(executionId: string, nextRun?: Date) {
   const execution = await prisma.workflowExecution.findUnique({
-    where: {
-      id: executionId,
-    },
-    include: {
-      workflow: true,
-      phases: true,
-    },
+    where: { id: executionId },
+    include: { phases: true, workflow: true },
   });
-  if (!execution) {
-    throw new Error(`Workflow execution not found`);
+  if (!execution) throw new Error("execution not found");
+
+  const edges = JSON.parse(execution.workflow.definition).edges as Edge[];
+  const environment: Environment = {
+    phases: {},
+  };
+
+  await initializeWorkflowExecution(executionId, execution.workflowId, nextRun);
+  await initializePhaseStatus(execution);
+
+  let executionFailed = false;
+  let creditsConsumed = 0;
+
+  // Calculate total credits required for this workflow
+  const totalCreditsRequired = execution.workflow.creditsCost;
+
+  // Pre-check credits availability for the entire workflow
+  const creditsCheck = await checkAndReserveWorkflowCredits(
+    execution.userId,
+    execution.workflowId,
+    totalCreditsRequired
+  );
+
+  // If we don't have enough credits, mark the execution as failed and early return
+  if (!creditsCheck.success) {
+    const logCollector = createLogCollector();
+    logCollector.error(
+      `Insufficient credits to run workflow. Required: ${totalCreditsRequired}, Available: ${
+        creditsCheck.userCredits || 0
+      }`
+    );
+
+    // Update execution status to show credit-related failure
+    await prisma.workflowExecution.update({
+      where: { id: executionId },
+      data: {
+        status: WorkflowExecutionStatus.FAILED,
+        completedAt: new Date(),
+        // Add a log entry to record the reason
+        phases: {
+          update: {
+            where: { id: execution.phases[0]?.id },
+            data: {
+              status: ExecutionPhaseStatus.FAILED,
+              completedAt: new Date(),
+              logs: {
+                create: {
+                  message: `Workflow execution failed - insufficient credits (Required: ${totalCreditsRequired}, Available: ${
+                    creditsCheck.userCredits || 0
+                  })`,
+                  logLevel: "error",
+                  timestamp: new Date(),
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await prisma.workflow
+      .update({
+        where: { id: execution.workflowId, lastRunId: executionId },
+        data: { lastRunStatus: WorkflowExecutionStatus.FAILED },
+      })
+      .catch(() => {
+        /* ignore - workflow might have been deleted */
+      });
+
+    return;
   }
 
-  const edges = JSON.parse(execution.definition).edges as Edge[];
-
-  const environment: Environment = { phases: {} };
-
-  await initializeWorkflowExecution(
-    executionId,
-    execution.workflowId,
-    nextRunAt
-  );
-  await initializePhaseStatuses(execution);
-
-  let creditsConsumed = 0;
-  let executionFailed = false;
-
+  // If we have enough credits, proceed with execution
   for (const phase of execution.phases) {
-    const phaseExecution = await executeWorkflowPhase(
+    const phaseExecution = await executionWorkflowPhase(
       phase,
       environment,
       edges,
@@ -56,7 +110,6 @@ export async function ExecuteWorkflow(executionId: string, nextRunAt?: Date) {
       break;
     }
   }
-
   await finalizeWorkflowExecution(
     executionId,
     execution.workflowId,
@@ -70,44 +123,36 @@ export async function ExecuteWorkflow(executionId: string, nextRunAt?: Date) {
 async function initializeWorkflowExecution(
   executionId: string,
   workflowId: string,
-  nextRunAt: Date
+  nextRunAt?: Date
 ) {
   await prisma.workflowExecution.update({
-    where: {
-      id: executionId,
-    },
+    where: { id: executionId },
     data: {
       startedAt: new Date(),
       status: WorkflowExecutionStatus.RUNNING,
     },
   });
-
   await prisma.workflow.update({
-    where: {
-      id: workflowId,
-    },
+    where: { id: workflowId },
     data: {
       lastRunAt: new Date(),
-      lastRunStatus: WorkflowExecutionStatus.RUNNING,
       lastRunId: executionId,
+      lastRunStatus: WorkflowExecutionStatus.RUNNING,
       ...(nextRunAt && { nextRunAt }),
     },
   });
 }
 
-async function initializePhaseStatuses(execution: any) {
+async function initializePhaseStatus(execution: any) {
   await prisma.executionPhase.updateMany({
     where: {
       id: {
         in: execution.phases.map((phase: any) => phase.id),
       },
     },
-    data: {
-      status: ExecutionPhaseStatus.PENDING,
-    },
+    data: { status: ExecutionPhaseStatus.PENDING },
   });
 }
-
 async function finalizeWorkflowExecution(
   executionId: string,
   workflowId: string,
@@ -117,74 +162,67 @@ async function finalizeWorkflowExecution(
   const finalStatus = executionFailed
     ? WorkflowExecutionStatus.FAILED
     : WorkflowExecutionStatus.COMPLETED;
+
   await prisma.workflowExecution.update({
-    where: {
-      id: executionId,
-    },
+    where: { id: executionId },
     data: {
       status: finalStatus,
       completedAt: new Date(),
-      creditsConsumed: creditsConsumed,
+      creditsConsumed,
     },
   });
 
   await prisma.workflow
     .update({
-      where: {
-        id: workflowId,
-        lastRunId: executionId,
-      },
+      where: { id: workflowId, lastRunId: executionId },
       data: {
         lastRunStatus: finalStatus,
       },
     })
     .catch((err) => {
-      // ignore
-      // this means that we have triggered other runs of the workflow
-      // while an execution was still running
+      //ignore
+      //this means that the workflow was deleted before the execution was completed
     });
 }
 
-export async function executeWorkflowPhase(
+async function executionWorkflowPhase(
   phase: ExecutionPhase,
   environment: Environment,
   edges: Edge[],
   userId: string
 ) {
-  const logCollector = createLogCollector();
-
+  let logCollector = createLogCollector();
   const startedAt = new Date();
   const node = JSON.parse(phase.node) as AppNode;
-
-  await setupEnvironmentForPhase(node, environment, edges);
-
+  await setupEnvironmentForPhase(node, environment, edges, userId);
   await prisma.executionPhase.update({
-    where: {
-      id: phase.id,
-    },
+    where: { id: phase.id },
     data: {
       status: ExecutionPhaseStatus.RUNNING,
       startedAt,
       inputs: JSON.stringify(environment.phases[node.id].inputs),
     },
   });
+
   const creditsRequired = TaskRegistry[node.data.type].credits;
-
+  console.log(`Running task ${node.data.type} with ${creditsRequired} credits`);
+  // TODO
   let success = await decrementCredits(userId, creditsRequired, logCollector);
-
   const creditsConsumed = success ? creditsRequired : 0;
 
   if (success) {
+    // we can run the task if credits are available
     success = await executePhase(phase, node, environment, logCollector);
   }
+
   const outputs = environment.phases[node.id].outputs;
 
   await finalizePhase(
     phase.id,
     success,
     outputs,
-    creditsConsumed,
-    logCollector
+    logCollector,
+    creditsConsumed
   );
 
   return { success, creditsConsumed };
@@ -194,22 +232,23 @@ async function finalizePhase(
   phaseId: string,
   success: boolean,
   outputs: any,
-  creditsConsumed: number,
-  logCollector: LogCollector
+  logCollector: LogCollector,
+  creditsConsumed: number
 ) {
-  const finalStatus = success
+  const status = success
     ? ExecutionPhaseStatus.COMPLETED
     : ExecutionPhaseStatus.FAILED;
 
+  // Filter out BROWSER_INSTANCE outputs before serialization
+  const serializableOutputs = filterSerializableOutputs(outputs);
+
   await prisma.executionPhase.update({
-    where: {
-      id: phaseId,
-    },
+    where: { id: phaseId },
     data: {
-      status: finalStatus,
+      status,
       completedAt: new Date(),
-      outputs: JSON.stringify(outputs),
-      creditsConsumed: creditsConsumed,
+      outputs: JSON.stringify(serializableOutputs),
+      creditsConsumed,
       logs: {
         createMany: {
           data: logCollector.getAll().map((log) => ({
@@ -223,55 +262,94 @@ async function finalizePhase(
   });
 }
 
+function filterSerializableOutputs(outputs: any): any {
+  if (!outputs || typeof outputs !== "object") {
+    return outputs;
+  }
+
+  const filtered = { ...outputs };
+
+  Object.keys(filtered).forEach((key) => {
+    const value = filtered[key];
+    if (
+      value &&
+      typeof value === "object" &&
+      (
+        typeof value.goto === "function" ||
+        typeof value.evaluate === "function" ||
+        typeof value.close === "function"
+      )
+    ) {
+      filtered[key] = "[Browser Instance - Not Serializable]";
+    }
+  });
+
+  return filtered;
+}
+
+
+
 async function executePhase(
   phase: ExecutionPhase,
   node: AppNode,
   environment: Environment,
   logCollector: LogCollector
 ): Promise<boolean> {
-  const runFun = ExecutorRegistry[node.data.type];
-  if (!runFun) {
-    logCollector.error(`No executor for ${node.data.type}`);
+  const runFn = ExecutorRegistry[node.data.type];
+  if (!runFn) {
+    logCollector.error(`Executor not found for ${node.data.type}`);
     return false;
   }
   const executionEnvironment: ExecutionEnvironment<any> =
     createExecutionEnvironment(node, environment, logCollector);
-  return await runFun(executionEnvironment);
+  return await runFn(executionEnvironment);
 }
 
 async function setupEnvironmentForPhase(
   node: AppNode,
   environment: Environment,
-  edges: Edge[]
+  edges: Edge[],
+  userId: string
 ) {
-  environment.phases[node.id] = { inputs: {}, outputs: {} };
+  environment.phases[node.id] = {
+    inputs: {},
+    outputs: {},
+  };
   const inputs = TaskRegistry[node.data.type].inputs;
   for (const input of inputs) {
     if (input.type === TaskParamType.BROWSER_INSTANCE) continue;
-    const value = await node.data.inputs[input.name];
-    if (value !== undefined && value !== null && value !== '') {
-  environment.phases[node.id].inputs[input.name] = value;
-  continue;
-}
+    const inputVal = node.data.inputs[input.name];
+    if (inputVal) {
+      // Handle credential inputs by resolving them to formatted values
+      if (input.type === TaskParamType.CREDENTIAL) {
+        try {
+          const credentialValue = await getCredentialValue(inputVal, userId);
+          environment.phases[node.id].inputs[input.name] = credentialValue;
+        } catch (error) {
+          console.error(`Failed to resolve credential ${inputVal}: ${error}`);
+          // Continue execution but with undefined credential - executor will handle the error
+          environment.phases[node.id].inputs[input.name] = undefined;
+        }
+      } else {
+        environment.phases[node.id].inputs[input.name] = inputVal;
+      }
+      continue;
+    }
 
-    // get input value from outputs in the environment
     const connectedEdge = edges.find(
       (edge) => edge.target === node.id && edge.targetHandle === input.name
     );
     if (!connectedEdge) {
-      console.log("Missing edge for input", input.name, "nodeId", node.id);
+      console.error(`Input not found for ${node.id} ${input.name}`);
       continue;
     }
-
     const outputValue =
       environment.phases[connectedEdge.source].outputs[
         connectedEdge.sourceHandle!
       ];
-
     environment.phases[node.id].inputs[input.name] = outputValue;
   }
 }
-
 function createExecutionEnvironment(
   node: AppNode,
   environment: Environment,
@@ -279,22 +357,33 @@ function createExecutionEnvironment(
 ): ExecutionEnvironment<any> {
   return {
     getInput: (name: string) => environment.phases[node.id]?.inputs[name],
-    setOutput: (name: string, value: string) => {
+    setOutput: (name: string, value: any) => {
       environment.phases[node.id].outputs[name] = value;
     },
+
     getBrowser: () => environment.browser,
-    setBrowser: (browser: Browser) => (environment.browser = browser),
+    setBrowser: (browser: Browser) => {
+      environment.browser = browser;
+    },
+
     getPage: () => environment.page,
-    setPage: (page: Page) => (environment.page = page),
+    setPage: (page: Page) => {
+      environment.page = page;
+    },
+
     log: logCollector,
   };
 }
 
+
 async function cleanupEnvironment(environment: Environment) {
   if (environment.browser) {
-    await environment.browser.close().catch((err) => console.log(err));
+    await environment.browser.close().catch((err) => {
+      console.error("Failed to close browser", err);
+    });
   }
 }
+
 
 async function decrementCredits(
   userId: string,
@@ -302,18 +391,48 @@ async function decrementCredits(
   logCollector: LogCollector
 ) {
   try {
+    // Since we already checked credits upfront, we can directly decrement here
+    // But we still do a safety check just in case
+    const balance = await prisma.userBalance.findUnique({
+      where: { userId },
+      select: { credits: true },
+    });
+
+    if (!balance) {
+      logCollector.error(
+        `User balance record not found. Credits required: ${amount}`
+      );
+      return false;
+    }
+
+    if (balance.credits < amount) {
+      logCollector.error(
+        `Insufficient credits. Available: ${balance.credits}, Required: ${amount}`
+      );
+      return false;
+    }
+
+    // Proceed with decrementing credits
     await prisma.userBalance.update({
-      where: {
-        userId,
-        credits: { gte: amount },
-      },
+      where: { userId },
       data: {
-        credits: { decrement: amount },
+        credits: {
+          decrement: amount,
+        },
       },
     });
+    logCollector.info(
+      `Successfully deducted ${amount} credits. Remaining balance: ${
+        balance.credits - amount
+      }`
+    );
     return true;
   } catch (error) {
-    logCollector.error("Insufficient credits");
+    logCollector.error(
+      `Failed to process credits: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
     return false;
   }
 }
