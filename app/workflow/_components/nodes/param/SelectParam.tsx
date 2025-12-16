@@ -1,4 +1,9 @@
+"use client";
+import React, { useEffect, useId, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ParamProps } from "@/types/appNodes";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -8,32 +13,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ParamProps } from "@/types/appNodes";
-import React, { useId } from "react";
 
-const SelectParam = ({ param, updateNodeParamValue, value }: ParamProps) => {
+type OptionType = {
+  label: string;
+  value: string;
+};
+export default function SelectParam({
+  param,
+  value,
+  updateNodeParamValue,
+}: ParamProps) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-1 w-full select">
+    <div className="flex flex-col gap-1 w-full">
       <Label htmlFor={id} className="text-xs flex">
         {param.name}
         {param.required && <p className="text-red-400 px-2">*</p>}
       </Label>
-      <Select onValueChange={(value) => updateNodeParamValue(value)} defaultValue={value}>
+      <Select
+        defaultValue={value}
+        onValueChange={(value) => updateNodeParamValue(value)}
+      >
         <SelectTrigger className="w-full">
-          <SelectValue placeholder='Select an option' />
-        </SelectTrigger>
-        <SelectContent>
+          <SelectValue placeholder="Select an option" />
+          <SelectContent>
             <SelectGroup>
-                <SelectLabel>Options</SelectLabel>
-                {param.options.map((option)=>(
-                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                ))}
+              <SelectLabel>Options</SelectLabel>
+              {param?.options?.map((option: OptionType) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectGroup>
-        </SelectContent>
+          </SelectContent>
+        </SelectTrigger>
       </Select>
     </div>
   );
-};
-
-export default SelectParam;
+}

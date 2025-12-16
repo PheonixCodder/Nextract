@@ -1,5 +1,4 @@
 "use client";
-
 import TooltipWrapper from "@/components/TooltipWrapper";
 import { Button } from "@/components/ui/button";
 import { ChevronLeftIcon } from "lucide-react";
@@ -13,13 +12,18 @@ import UnpublishBtn from "./UnpublishBtn";
 
 interface Props {
   title: string;
-  subTitle?: string;
+  subtitle?: string;
   workflowId: string;
   hideButtons?: boolean;
   isPublished?: boolean;
 }
-
-const Topbar = ({ title, subTitle, workflowId, hideButtons, isPublished = false }: Props) => {
+function Topbar({
+  title,
+  subtitle,
+  workflowId,
+  hideButtons = false,
+  isPublished = false,
+}: Props) {
   const router = useRouter();
   return (
     <header className="flex p-2 border-b-2 border-separate justify-between w-full h-[60px] sticky top-0 bg-background z-10">
@@ -31,14 +35,16 @@ const Topbar = ({ title, subTitle, workflowId, hideButtons, isPublished = false 
         </TooltipWrapper>
         <div>
           <p className="font-bold text-ellipsis truncate">{title}</p>
-          <p className="text-xs text-muted-foreground truncate text-ellipsis text-gray-500">
-            {subTitle}
-          </p>
+          {subtitle && (
+            <p className="text-xs text-muted-foreground text-ellipsis truncate">
+              {subtitle}
+            </p>
+          )}
         </div>
       </div>
       <NavigationTabs workflowId={workflowId} />
       <div className="flex gap-1 flex-1 justify-end">
-        {!hideButtons && (
+        {hideButtons === false && (
           <>
             <ExecuteBtn workflowId={workflowId} />
             {isPublished && <UnpublishBtn workflowId={workflowId} />}
@@ -53,6 +59,6 @@ const Topbar = ({ title, subTitle, workflowId, hideButtons, isPublished = false 
       </div>
     </header>
   );
-};
+}
 
 export default Topbar;

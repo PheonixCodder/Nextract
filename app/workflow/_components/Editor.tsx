@@ -1,6 +1,5 @@
 "use client";
-
-import { Workflow } from "../../../lib/generated/prisma";
+import { Workflow } from "@/lib/generated/prisma";
 import React from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import FlowEditor from "./FlowEditor";
@@ -9,20 +8,26 @@ import TaskMenu from "./TaskMenu";
 import { FlowValidationContextProvider } from "@/components/context/FlowValidationContext";
 import { WorkflowStatus } from "@/types/workflow";
 
-const Editor = ({ workflow }: { workflow: Workflow }) => {
+interface Props {
+  workflow: Workflow;
+}
+export default function Editor({ workflow }: Props) {
   return (
     <FlowValidationContextProvider>
-    <ReactFlowProvider>
-      <div className="flex flex-col h-full w-full overflow-hidden">
-        <Topbar title='Workflow Editor' subTitle={workflow.name} workflowId={workflow.id} isPublished={workflow.status === WorkflowStatus.PUBLISHED ? true : false} />
-        <section className="flex h-full overflow-auto">
-          <TaskMenu />
-          <FlowEditor workflow={workflow} />
-        </section>
-      </div>
-    </ReactFlowProvider>
+      <ReactFlowProvider>
+        <div className="flex flex-col h-full w-full overflow-auto">
+          <Topbar
+            title="Workflow editor"
+            subtitle={workflow.name}
+            workflowId={workflow.id}
+            isPublished={workflow.status === WorkflowStatus.PUBLISHED}
+          />
+          <section className="flex h-full overflow-auto">
+            <TaskMenu />
+            <FlowEditor workflow={workflow} />
+          </section>
+        </div>
+      </ReactFlowProvider>
     </FlowValidationContextProvider>
   );
-};
-
-export default Editor;
+}
