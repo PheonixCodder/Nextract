@@ -1,6 +1,6 @@
-import { TaskParamType, TaskType } from "@/types/task";
+import { TaskParamType, TaskType } from "@/types/taskType";
 import { WorkflowTask } from "@/types/workflow";
-import { Edit3Icon, MousePointerClick } from "lucide-react";
+import { MousePointerClick } from "lucide-react";
 
 export const ClickElementTask = {
   type: TaskType.CLICK_ELEMENT,
@@ -9,23 +9,23 @@ export const ClickElementTask = {
     <MousePointerClick className="stroke-orange-400" {...props} />
   ),
   isEntryPoint: false,
+  credits: 1,
   inputs: [
     {
-      name: "Web Page",
+      name: "Web page",
       type: TaskParamType.BROWSER_INSTANCE,
       required: true,
     },
     {
-        name:'Selector',
-        type: TaskParamType.STRING,
-        required: true,
+      name: "Selector",
+      type: TaskParamType.STRING,
+      required: true,
     },
   ] as const,
-  outputs : [
-        {
-            name : 'Web Page',
-            type : TaskParamType.BROWSER_INSTANCE,
-        }
-    ],
-    credits : 1
-} satisfies WorkflowTask
+  outputs: [
+    {
+      name: "Web page",
+      type: TaskParamType.BROWSER_INSTANCE,
+    },
+  ] as const,
+} satisfies WorkflowTask;
