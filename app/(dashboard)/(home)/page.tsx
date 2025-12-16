@@ -6,26 +6,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GetStatsCardsValues } from "@/actions/analytics/getStatsCardsValues";
 import { CirclePlayIcon, CoinsIcon, WaypointsIcon } from "lucide-react";
 import StatsCard from "./_components/StatsCard";
-import { GetWorkflowExecutionStats } from "@/actions/analytics/getWorkflowExecutionStats";
-import ExecutionStatusChart from "./_components/ExecutionStatusChart";
-import { GetCreditsUsageInPeriod } from "@/actions/analytics/getCreditsUsageInPeriod";
-import CreditUsageChart from "../billing/_components/CreditUsageChart";
+import { GetWorkflowExecutionsStats } from "@/actions/analytics/getWorkflowExecutionStats";
+import { waitFor } from "@/lib/helper/waitFor";
+import ExecutionStatusChat from "./_components/ExecutionStatusChart";
+import { GetCreditUsageInPeriod } from "@/actions/analytics/getCreditsUsageInPeriod";
+import CreditUsageChat from "../billing/_components/CreditUsageChart";
 
 const HomePage = async ({
   searchParams,
 }: {
-  searchParams: { month: string; year: string };
+  searchParams: { month?: string; year?: string };
 }) => {
   const currentDate = new Date();
-  const { month, year } = await searchParams;
-  console.log(currentDate.getMonth());
+  const { month, year } = (await searchParams);
   const period: Period = {
     month: month ? parseInt(month) : currentDate.getMonth(),
     year: year ? parseInt(year) : currentDate.getFullYear(),
   };
-  console.log(period);
   return (
-    <div className="flex flex-col flex-1 h-full">
+    <div className="flex flex-1 flex-col h-full">
       <div className="flex justify-between">
         <h1 className="text-3xl font-bold">Home</h1>
         <Suspense fallback={<Skeleton className="w-[180px] h-[40px]" />}>
@@ -40,12 +39,14 @@ const HomePage = async ({
           <StatsExecutionStatus selectedPeriod={period} />
         </Suspense>
         <Suspense fallback={<Skeleton className="w-full h-[300px]" />}>
-          <CreditsUsageInPeriod selectedPeriod={period} />
+          <CreditUsageInPeriod selectedPeriod={period} />
         </Suspense>
       </div>
     </div>
   );
 };
+
+export default HomePage;
 
 async function PeriodSelectorWrapper({
   selectedPeriod,
@@ -56,49 +57,63 @@ async function PeriodSelectorWrapper({
   return <PeriodSelector selectedPeriod={selectedPeriod} periods={periods} />;
 }
 
-async function StatsCards({ selectedPeriod }: { selectedPeriod: Period }) {
+const StatsCards = async ({ selectedPeriod }: { selectedPeriod: Period }) => {
   const data = await GetStatsCardsValues(selectedPeriod);
   return (
     <div className="grid gap-3 lg:gap-8 lg:grid-cols-3 min-h-[120px]">
       <StatsCard
-        title={"Workflow Executions"}
+        title="Workflow executions"
         value={data.workflowExecutions}
         icon={CirclePlayIcon}
       />
       <StatsCard
-        title={"Phase Executions"}
-        value={data.phaseExecutions}
+        title="Phase executions"
+        value={data.phasesExecutions}
         icon={WaypointsIcon}
       />
       <StatsCard
-        title={"Credits Consumed"}
+        title="Credits consumed"
         value={data.creditsConsumed}
         icon={CoinsIcon}
       />
     </div>
   );
-}
+};
 
-function StatsCardSkeleton(){
-  return <div className="grid gap-3 lg:gap-8 lg:grid-cols-3">
-      {
-      [1,2,3].map(i => <Skeleton key={i} className="w-full h-[120px]" />)
-      }
+async function StatsExecutionStatus({
+  selectedPeriod,
+}: {
+  selectedPeriod: Period;
+}) {
+  const data = await GetWorkflowExecutionsStats(selectedPeriod);
+  return (
+    <div>
+      <ExecutionStatusChat data={data} />
     </div>
+  );
 }
 
-async function StatsExecutionStatus({selectedPeriod}: {selectedPeriod: Period}){
-  const data = await GetWorkflowExecutionStats(selectedPeriod);
+function StatsCardSkeleton() {
   return (
-    <ExecutionStatusChart data={data} />
-  )
+    <div className="grid gap-3 lg:gap-8 lg:grid-cols-3">
+      {[1, 2, 3].map((i) => {
+        return <Skeleton key={i} className="w-full min-h-[120px]" />;
+      })}
+    </div>
+  );
 }
 
-async function CreditsUsageInPeriod({selectedPeriod}: {selectedPeriod: Period}){
-  const data = await GetCreditsUsageInPeriod(selectedPeriod);
+async function CreditUsageInPeriod({
+  selectedPeriod,
+}: {
+  selectedPeriod: Period;
+}) {
+  const data = await GetCreditUsageInPeriod(selectedPeriod);
   return (
-    <CreditUsageChart title='Daily credits spent' description='Daily credits spent in the selected period' data={data} />
-  )
+    <CreditUsageChat
+      data={data}
+      title="Daily credits spent"
+      description="Daily credit consumed in selected period"
+    />
+  );
 }
-
-export default HomePage;
