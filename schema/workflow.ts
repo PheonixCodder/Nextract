@@ -1,14 +1,16 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 export const createWorkflowSchema = z.object({
-    name : z.string().min(1, 'Name is required'),
-    description : z.string().max(80).optional(),
-})
+  name: z.string().nonempty("Name is required").max(50),
+  description: z.string().max(80).optional(),
+});
 
-export type createWorkflowSchemaType = z.infer<typeof createWorkflowSchema>
+export type createWorkflowSchemaType = z.infer<typeof createWorkflowSchema>;
 
 export const duplicateWorkflowSchema = createWorkflowSchema.extend({
-    workflowId : z.string()
-})
+  workflowId: z.string(),
+});
 
-export type duplicateWorkflowSchemaType = z.infer<typeof duplicateWorkflowSchema>
+export type duplicateWorkflowSchemaType = z.infer<
+  typeof duplicateWorkflowSchema
+>;
