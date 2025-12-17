@@ -4,5 +4,13 @@
       "path": "/api/workflows/cron",
       "schedule": "0 3 * * *"
     }
-  ]
+  ],
+    "functions": {
+    "app/**": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "includeFiles": "node_modules/@sparticuz/chromium-min/**"
+    }
+  }
+
 }
