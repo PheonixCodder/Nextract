@@ -39,9 +39,8 @@ export async function LaunchBrowserExecutor(
           "--hide-scrollbars",
           "--disable-web-security",
         ],
-        defaultViewport: chromium.defaultViewport,
-        headless: chromium.headless,
-        // @ts-ignore
+        defaultViewport: { width: 1280, height: 800 }, // manually specify viewport
+        headless: true, // manually specify headless mode
         ignoreHTTPSErrors: true,
       });
     } else {
