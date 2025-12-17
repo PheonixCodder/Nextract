@@ -15,19 +15,19 @@ export async function LaunchBrowserExecutor(
   try {
     const websiteUrl = environment.getInput("Website Url");
     const isProd =
-      process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+      process.env.NODE_ENV === "production" ||
+      process.env.VERCEL_ENV === "production";
 
     environment.log.info(
       `Launching Puppeteer in ${isProd ? "production" : "development"} mode`
     );
 
     if (isProd) {
-      // Use Sparticuz Chromium in Vercel
-      const executablePath = await chromium.executablePath();
+      const remoteTar = process.env.CHROMIUM_REMOTE_EXEC_PATH;
 
-      if (!executablePath) {
-        throw new Error("Chromium executable path not found in Vercel environment");
-      }
+      if (!remoteTar) throw new Error("CHROMIUM_REMOTE_EXEC_PATH not set");
+
+      const executablePath = await chromium.executablePath(remoteTar);
 
       browser = await puppeteerCore.launch({
         executablePath,
@@ -52,8 +52,13 @@ export async function LaunchBrowserExecutor(
     environment.setBrowser(browser);
 
     const page = await browser.newPage();
-    await page.setViewport(isProd ? { width: 1280, height: 800 } : { width: 1080, height: 1024 });
-    await page.goto(websiteUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.setViewport(
+      isProd ? { width: 1280, height: 800 } : { width: 1080, height: 1024 }
+    );
+    await page.goto(websiteUrl, {
+      waitUntil: "domcontentloaded",
+      timeout: 30_000,
+    });
     environment.setPage(page);
 
     environment.log.info(`Opened the website successfully: ${websiteUrl}`);
