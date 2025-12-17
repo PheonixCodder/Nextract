@@ -33,7 +33,7 @@ export async function LaunchBrowserExecutor(
       if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
       // executablePath() will download the tar once per deployment and cache it
-      const executablePath = await chromium.executablePath(remoteTar, tmpDir);
+const executablePath = await chromium.executablePath(remoteTar);
 
       if (!executablePath) throw new Error("Chromium executable path not found");
 
@@ -42,7 +42,6 @@ export async function LaunchBrowserExecutor(
         args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
         defaultViewport: { width: 1280, height: 800 },
         headless: true,
-        ignoreHTTPSErrors: true,
       });
     } else {
       // Local development
