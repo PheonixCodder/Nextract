@@ -13,21 +13,18 @@ export async function LaunchBrowserExecutor(
   try {
     const websiteUrl = environment.getInput("Website Url");
 
-    const REMOTE_PATH = process.env.CHROMIUM_REMOTE_EXEC_PATH;
-    const LOCAL_PATH = process.env.CHROMIUM_LOCAL_EXEC_PATH;
+    environment.log.info("Launching Playwright with Sparticuz Chromium");
 
-    if (!REMOTE_PATH && !LOCAL_PATH) {
-      throw new Error("Missing chromium executable path");
+    const executablePath = await chromium.executablePath();
+
+    if (!executablePath) {
+      throw new Error("Chromium executable path is empty");
     }
 
-    environment.log.info("Launching browser (Playwright + external Chromium)");
-
     browser = await pwChromium.launch({
+      args: chromium.args,
+      executablePath,
       headless: true,
-      args: REMOTE_PATH ? chromium.args : [],
-      executablePath: REMOTE_PATH
-        ? await chromium.executablePath(REMOTE_PATH)
-        : LOCAL_PATH,
     });
 
     environment.setBrowser(browser);
@@ -38,25 +35,21 @@ export async function LaunchBrowserExecutor(
     });
 
     const page = await context.newPage();
-
     await page.goto(websiteUrl, {
       waitUntil: "domcontentloaded",
       timeout: 30_000,
     });
 
     environment.setPage(page);
+    environment.log.info("Website opened successfully");
 
-    environment.log.info(`Website opened successfully: ${websiteUrl}`);
     return true;
   } catch (error: any) {
     environment.log.error(
       `Browser launch failed: ${error?.message ?? "Unknown error"}`
     );
 
-    if (browser) {
-      await browser.close().catch(() => {});
-    }
-
+    if (browser) await browser.close().catch(() => {});
     return false;
   }
 }
