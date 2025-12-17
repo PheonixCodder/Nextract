@@ -103,7 +103,7 @@ Nextract is a comprehensive web scraping and automation platform that allows use
 - **Authentication**: Clerk
 - **Payments**: Stripe
 - **Scheduling**: Custom cron scheduler with hybrid approach
-- **Web Scraping**: Playwright/Chromium
+- **Web Scraping**: Puppeteer/Chromium
 - **AI Integration**: OpenAI
 - **Email Service**: Resend
 
@@ -115,7 +115,7 @@ Nextract is a comprehensive web scraping and automation platform that allows use
 
 ## Live Demo
 
-Experience Nextract in action at our [Live Demo](https://scrape-flow-demo.vercel.app)
+Experience Nextract in action at our [Live Demo](https://nextract-two.vercel.app/)
 
 ## Getting Started
 
@@ -131,8 +131,8 @@ Experience Nextract in action at our [Live Demo](https://scrape-flow-demo.vercel
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/PheonixCodder/scrape-flow.git
-cd scrape-flow
+git clone https://github.com/PheonixCodder/nextract.git
+cd nextract
 ```
 
 2. Install dependencies:
