@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && npx sparticuz-chromium install"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.2",
