@@ -5,13 +5,11 @@
       "schedule": "0 3 * * *"
     }
   ],
-      "functions": {
+  "functions": {
     "app/api/workflows/execute/route.ts": {
-      "memory": 1024,
+      "memory": 2048,
       "maxDuration": 60,
-      "includeFiles": "node_modules/@sparticuz/chromium-min/**"
+      "includeFiles": "node_modules/@sparticuz/chromium/bin/**"
     }
   }
-
-
 }
