@@ -1,71 +1,66 @@
 import puppeteer, { type Browser } from "puppeteer";
 import { type Browser as BrowserCore } from "puppeteer-core";
-const puppeteerCore = require("puppeteer-core");
-// const chromium = require("@sparticuz/chromium-min");
+import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 import { ExecutionEnvironment } from "@/types/executor";
 import { LaunchBrowserTask } from "../task/LaunchBrowser";
 
+export const runtime = "nodejs";
+
 export async function LaunchBrowserExecutor(
   environment: ExecutionEnvironment<typeof LaunchBrowserTask>
 ): Promise<boolean> {
+  let browser: Browser | BrowserCore | undefined;
+
   try {
     const websiteUrl = environment.getInput("Website Url");
-    let browser: Browser | BrowserCore;
-    console.log(
-      "@process..........",
-      process.env.NODE_ENV,
-      process.env.VERCEL_ENV
-    );
-    if (
-      process.env.NODE_ENV === "production" ||
-      process.env.VERCEL_ENV === "production"
-    ) {
-      console.log("Launching in production mode...");
-      // Updated production configuration
-      const executionPath =
-        "https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar";
+    const isProd =
+      process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
 
-      // "https://github.com/Sparticuz/chromium/releases/download/v119.0.2/chromium-v119.0.2-pack.tar"
-      // "/opt/nodejs/node_modules/@sparticuz/chromium/bin"
+    environment.log.info(
+      `Launching Puppeteer in ${isProd ? "production" : "development"} mode`
+    );
+
+    if (isProd) {
+      // Use Sparticuz Chromium in Vercel
+      const executablePath = await chromium.executablePath();
+
+      if (!executablePath) {
+        throw new Error("Chromium executable path not found in Vercel environment");
+      }
 
       browser = await puppeteerCore.launch({
-        executablePath: await chromium.executablePath(executionPath),
-        args: [
-          ...chromium.args,
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--hide-scrollbars",
-          "--disable-web-security",
-        ],
-        defaultViewport: { width: 1280, height: 800 }, // manually specify viewport
-        headless: true, // manually specify headless mode
-        ignoreHTTPSErrors: true,
+        executablePath,
+        args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+        defaultViewport: { width: 1280, height: 800 },
+        headless: true,
       });
     } else {
-      console.log("Launching in development mode...");
+      // Local development using installed Chrome
       const localExecutablePath =
-        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+        "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"; // change if needed
+
       browser = await puppeteer.launch({
-        headless: true, //testing in headful modes
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
         executablePath: localExecutablePath,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        headless: true,
+        defaultViewport: { width: 1080, height: 1024 },
       });
     }
 
-    environment.log.info("Browser launched successfully.");
+    environment.log.info("Browser launched successfully");
     environment.setBrowser(browser);
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1080, height: 1024 });
-    await page.goto(websiteUrl, { waitUntil: "domcontentloaded" });
-    environment.setPage(page);
-    environment.log.info(`Opened the website successfully. URL:${websiteUrl}`);
 
+    const page = await browser.newPage();
+    await page.setViewport(isProd ? { width: 1280, height: 800 } : { width: 1080, height: 1024 });
+    await page.goto(websiteUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    environment.setPage(page);
+
+    environment.log.info(`Opened the website successfully: ${websiteUrl}`);
     return true;
-  } catch (e: any) {
-    environment.log.error(`Failed to launch browser: ${e.message}`);
-    console.error("Error while launching puppeteer:", e);
+  } catch (error: any) {
+    environment.log.error(`Failed to launch browser: ${error.message}`);
+    if (browser) await browser.close().catch(() => {});
     return false;
   }
 }
