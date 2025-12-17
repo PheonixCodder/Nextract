@@ -11,23 +11,17 @@ import { TaskRegistry } from "./task/registry";
 import { TaskParamType } from "@/types/taskType";
 import { ExecutorRegistry } from "./executor/registry";
 import { Environment, ExecutionEnvironment } from "@/types/executor";
-import type { Browser, Page } from "playwright-core";
+import type { Browser, Page } from "puppeteer-core";
 import { Edge } from "@xyflow/react";
 import { LogCollector } from "@/types/log";
 import { createLogCollector } from "../log";
 
 import { checkAndReserveWorkflowCredits } from "./creditCheck";
 import { getCredentialValue } from "../credential/getCredentialValue";
-import fs from "fs";
 
 export const runtime = "nodejs";
 
 export async function ExecuteWorkflow(executionId: string, nextRun?: Date) {
-  console.log(
-    "chromium-min exists:",
-    fs.existsSync("/var/task/node_modules/@sparticuz/chromium-min/bin")
-  );
-
   const execution = await prisma.workflowExecution.findUnique({
     where: { id: executionId },
     include: { phases: true, workflow: true },
@@ -282,9 +276,11 @@ function filterSerializableOutputs(outputs: any): any {
     if (
       value &&
       typeof value === "object" &&
-      (typeof value.goto === "function" ||
+      (
+        typeof value.goto === "function" ||
         typeof value.evaluate === "function" ||
-        typeof value.close === "function")
+        typeof value.close === "function"
+      )
     ) {
       filtered[key] = "[Browser Instance - Not Serializable]";
     }
@@ -292,6 +288,8 @@ function filterSerializableOutputs(outputs: any): any {
 
   return filtered;
 }
+
+
 
 async function executePhase(
   phase: ExecutionPhase,
@@ -379,6 +377,7 @@ function createExecutionEnvironment(
   };
 }
 
+
 async function cleanupEnvironment(environment: Environment) {
   if (environment.browser) {
     await environment.browser.close().catch((err) => {
@@ -386,6 +385,7 @@ async function cleanupEnvironment(environment: Environment) {
     });
   }
 }
+
 
 async function decrementCredits(
   userId: string,

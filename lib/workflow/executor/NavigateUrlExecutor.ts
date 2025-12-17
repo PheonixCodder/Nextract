@@ -1,5 +1,4 @@
 import { ExecutionEnvironment } from "@/types/executor";
-import { ClickElementTask } from "../task/ClickElement";
 import { NavigateUrlTask } from "../task/NavigateUrl";
 
 export async function NavigateUrlExecutor(
@@ -9,10 +8,17 @@ export async function NavigateUrlExecutor(
     const url = environment.getInput("URL");
     if (!url) {
       environment.log.error("Input URL is required");
+      return false;
     }
 
-    await environment.getPage()!.goto(url);
-    environment.log.info(`Visited to ${url}`);
+    const page = environment.getPage();
+    if (!page) {
+      environment.log.error("No page found");
+      return false;
+    }
+
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    environment.log.info(`Navigated to ${url}`);
     return true;
   } catch (e: any) {
     environment.log.error(e.message);

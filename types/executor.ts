@@ -1,4 +1,4 @@
-import type { Browser, Page } from "playwright-core";
+import type { Browser, Page } from "puppeteer-core";
 import { WorkflowTask } from "./workflow";
 import { LogCollector } from "./log";
 

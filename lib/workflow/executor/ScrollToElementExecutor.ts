@@ -1,6 +1,6 @@
 import { ExecutionEnvironment } from "@/types/executor";
 import { ScrollToElementTask } from "../task/ScrollToElement";
-import type { Page } from "playwright-core";
+import type { Page } from "puppeteer-core";
 
 export const runtime = "nodejs";
 
@@ -18,9 +18,7 @@ export async function ScrollToElementExecutor(
 
     await page.evaluate((selector: string) => {
       const element = document.querySelector(selector);
-      if (!element) {
-        throw new Error(`Element with selector ${selector} not found`);
-      }
+      if (!element) throw new Error(`Element with selector ${selector} not found`);
       const top = element.getBoundingClientRect().top + window.scrollY;
       window.scrollTo({ top, behavior: "smooth" });
     }, selector);

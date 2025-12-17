@@ -19,19 +19,19 @@ export async function WaitForElementExecutor(
 
     const page = environment.getPage();
     if (!page) {
-      environment.log.error("Playwright page is not available");
+      environment.log.error("Puppeteer page is not available");
       return false;
     }
 
-    const state =
-      visibility === "visible"
-        ? "visible"
-        : visibility === "hidden"
-        ? "hidden"
-        : "attached";
+    // Puppeteer's waitForSelector options
+    const options: any = {};
+    if (visibility === "visible") {
+      options.visible = true;
+    } else if (visibility === "hidden") {
+      options.hidden = true;
+    }
 
-    await page.waitForSelector(selector, { state });
-
+    await page.waitForSelector(selector, options);
     environment.log.info(`Element ${selector} is ${visibility}`);
     return true;
   } catch (e: any) {

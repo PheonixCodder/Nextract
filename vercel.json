@@ -9,7 +9,7 @@
     "app/api/workflows/execute/route.ts": {
       "memory": 2048,
       "maxDuration": 60,
-      "includeFiles": "node_modules/@sparticuz/chromium/bin/**"
+      "includeFiles": "node_modules/@sparticuz/chromium-min/**"
     }
   }
 }
