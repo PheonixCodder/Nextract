@@ -1,5 +1,5 @@
 import { chromium as pwChromium, type Browser } from "playwright-core";
-import chromiumLambda from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import { ExecutionEnvironment } from "@/types/executor";
 import { LaunchBrowserTask } from "../task/LaunchBrowser";
 
@@ -13,16 +13,21 @@ export async function LaunchBrowserExecutor(
   try {
     const websiteUrl = environment.getInput("Website Url");
 
-    environment.log.info("Launching browser (Playwright + @sparticuz/chromium)");
+    const REMOTE_PATH = process.env.CHROMIUM_REMOTE_EXEC_PATH;
+    const LOCAL_PATH = process.env.CHROMIUM_LOCAL_EXEC_PATH;
 
-    const isServerless = process.env.VERCEL === "1";
+    if (!REMOTE_PATH && !LOCAL_PATH) {
+      throw new Error("Missing chromium executable path");
+    }
+
+    environment.log.info("Launching browser (Playwright + external Chromium)");
 
     browser = await pwChromium.launch({
       headless: true,
-      args: isServerless ? chromiumLambda.args : [],
-      executablePath: isServerless
-        ? await chromiumLambda.executablePath()
-        : undefined,
+      args: REMOTE_PATH ? chromium.args : [],
+      executablePath: REMOTE_PATH
+        ? await chromium.executablePath(REMOTE_PATH)
+        : LOCAL_PATH,
     });
 
     environment.setBrowser(browser);
@@ -40,13 +45,18 @@ export async function LaunchBrowserExecutor(
     });
 
     environment.setPage(page);
-    environment.log.info(`Website opened successfully: ${websiteUrl}`);
 
+    environment.log.info(`Website opened successfully: ${websiteUrl}`);
     return true;
   } catch (error: any) {
-    environment.log.error(`Browser launch failed: ${error?.message ?? "Unknown error"}`);
+    environment.log.error(
+      `Browser launch failed: ${error?.message ?? "Unknown error"}`
+    );
 
-    if (browser) await browser.close().catch(() => {});
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+
     return false;
   }
 }
